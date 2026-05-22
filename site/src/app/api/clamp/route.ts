@@ -1,19 +1,23 @@
 // site/src/app/api/clamp/route.ts — POST /api/clamp microservice endpoint
 import { type NextRequest, NextResponse } from 'next/server'
 import { clampFont } from 'vf-clamp'
-import type { SubfamilyConfig } from 'vf-clamp'
+import type { SubfamilyConfig, OutputFormat } from 'vf-clamp'
 
 interface ClampRequest {
 	/** URL of the source variable font (TTF). Fetched server-side — must be publicly accessible. */
 	fontUrl: string
 	/** One entry per restricted variant to produce */
 	subfamilies: SubfamilyConfig[]
+	/** Output format — 'ttf' (default) or 'woff2' */
+	format?: OutputFormat
 }
 
 interface ClampResponseResult {
 	name: string
-	/** Base64-encoded restricted TTF */
+	/** Base64-encoded restricted font */
 	data: string
+	/** Format of the returned font binary */
+	format: OutputFormat
 	/** Byte size of the restricted font */
 	size: number
 }
@@ -52,7 +56,7 @@ export async function POST(req: NextRequest) {
 		return badRequest('Request body must be valid JSON')
 	}
 
-	const { fontUrl, subfamilies } = body
+	const { fontUrl, subfamilies, format } = body
 
 	if (!fontUrl || typeof fontUrl !== 'string') {
 		return badRequest('fontUrl is required and must be a string')
@@ -87,7 +91,7 @@ export async function POST(req: NextRequest) {
 	// Process
 	let clampResults
 	try {
-		clampResults = await clampFont(fontBuffer, { subfamilies })
+		clampResults = await clampFont(fontBuffer, { subfamilies, format })
 	} catch (err) {
 		console.error('clampFont failed:', err)
 		return NextResponse.json(
@@ -100,6 +104,7 @@ export async function POST(req: NextRequest) {
 	const results: ClampResponseResult[] = clampResults.map((r) => ({
 		name: r.name,
 		data: Buffer.from(r.buffer).toString('base64'),
+		format: r.format,
 		size: r.buffer.byteLength,
 	}))
 

@@ -1,13 +1,15 @@
-// next.config.ts — synced from type-tools/shared/site/next.config.ts. Do not edit directly.
-import type { NextConfig } from "next"
-import path from "path"
+// site/next.config.ts — vfclamp.com site + API microservice
+import type { NextConfig } from 'next'
+import path from 'path'
 
-const nextConfig: NextConfig = {
+const config: NextConfig = {
 	turbopack: {
-		// Set workspace root so Turbopack can resolve the sibling npm package
-		// and imports like ../../../package.json from within the site/ subdirectory.
-		root: path.resolve(__dirname, ".."),
+		root: path.resolve(__dirname, '..'),
 	},
+	// Prevent bundling of Pyodide-based packages — must run as Node.js server-side only
+	serverExternalPackages: ['@web-alchemy/fonttools', 'vf-clamp'],
+	// Enable instrumentation hook so Pyodide can pre-warm at function boot
+	experimental: { instrumentationHook: true },
 }
 
-export default nextConfig
+export default config

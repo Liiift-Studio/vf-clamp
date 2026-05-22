@@ -37,14 +37,21 @@ export interface SubfamilyConfig {
 export interface ClampOptions {
 	/** One entry per restricted variant to produce */
 	subfamilies: SubfamilyConfig[]
+	/** Output format — defaults to 'ttf'; 'woff2' compresses using fonttools + Brotli */
+	format?: OutputFormat
 }
+
+/** Output format for clampFont() — TTF is the default; WOFF2 is compressed */
+export type OutputFormat = 'ttf' | 'woff2'
 
 /** One output from clampFont() — a restricted variable font for a single subfamily */
 export interface ClampResult {
 	/** Matches the SubfamilyConfig name */
 	name: string
-	/** Restricted font binary — write to .ttf or pass to a WOFF2 encoder */
+	/** Restricted font binary — write to disk or upload; format matches options.format */
 	buffer: Uint8Array
+	/** Format of the buffer — 'ttf' by default, 'woff2' if requested */
+	format: OutputFormat
 }
 
 /** One axis defined in the font's fvar table */
