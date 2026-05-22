@@ -1,6 +1,7 @@
 // src/core/clamp.ts — clampFont() implementation wrapping @web-alchemy/fonttools
 import { instantiateVariableFont } from '@web-alchemy/fonttools'
-import type { AxisValue, ClampOptions, ClampResult } from './types.js'
+import type { AxisValue, ClampOptions, ClampResult, OutputFormat } from './types.js'
+import { convertToWoff2 } from './convert.js'
 
 /** Convert a vf-clamp AxisValue to the format expected by @web-alchemy/fonttools */
 function toInstancerValue(value: AxisValue): number | [number, number] | null {
@@ -14,7 +15,7 @@ function toInstancerValue(value: AxisValue): number | [number, number] | null {
  * Subfamilies are processed sequentially (Pyodide is single-threaded).
  *
  * @param input - Source variable font binary (TTF)
- * @param options - Subfamily configs defining which axes to clamp
+ * @param options - Subfamily configs defining which axes to clamp, and optional output format
  * @returns One ClampResult per subfamily, in the same order as options.subfamilies
  */
 export async function clampFont(
@@ -28,6 +29,7 @@ export async function clampFont(
 	const bytes: Uint8Array | Buffer =
 		input instanceof ArrayBuffer ? new Uint8Array(input) : input
 
+	const format: OutputFormat = options.format ?? 'ttf'
 	const results: ClampResult[] = []
 
 	for (const subfamily of options.subfamilies) {
@@ -41,8 +43,13 @@ export async function clampFont(
 			}
 		}
 
-		const buffer = await instantiateVariableFont(bytes, instancerAxes)
-		results.push({ name: subfamily.name, buffer })
+		let buffer = await instantiateVariableFont(bytes, instancerAxes)
+
+		if (format === 'woff2') {
+			buffer = await convertToWoff2(buffer)
+		}
+
+		results.push({ name: subfamily.name, buffer, format })
 	}
 
 	return results

@@ -66,6 +66,23 @@ describe('clampFont — integration (real Pyodide + fonttools)', () => {
 		})
 	}, 180_000)
 
+	it('woff2 format output has wOF2 magic bytes and is smaller than TTF', async () => {
+		const input = interVF()
+		const [ttf, woff2] = await Promise.all([
+			clampFont(input, { subfamilies: [{ name: 'Text', axes: { wght: { min: 400, max: 700 } } }] }),
+			clampFont(input, { format: 'woff2', subfamilies: [{ name: 'Text', axes: { wght: { min: 400, max: 700 } } }] }),
+		])
+
+		// WOFF2 magic: 0x774F4632
+		expect(woff2[0].buffer[0]).toBe(0x77)
+		expect(woff2[0].buffer[1]).toBe(0x4f)
+		expect(woff2[0].buffer[2]).toBe(0x46)
+		expect(woff2[0].buffer[3]).toBe(0x32)
+		expect(woff2[0].format).toBe('woff2')
+		// Brotli compression makes WOFF2 smaller than the equivalent TTF
+		expect(woff2[0].buffer.byteLength).toBeLessThan(ttf[0].buffer.byteLength)
+	}, 180_000)
+
 	it('null axis is omitted — full-range font is returned unchanged', async () => {
 		const input = interVF()
 		// null means "omit this axis from the instancer call" — font keeps full range

@@ -1,6 +1,7 @@
 // src/__tests__/clamp.test.ts — unit tests for clampFont()
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { clampFont } from '../core/clamp.js'
+import { convertToWoff2 } from '../core/convert.js'
 
 // vi.mock is hoisted — use vi.hoisted() so the variable is defined before the factory runs
 const { mockInstantiateVariableFont } = vi.hoisted(() => ({
@@ -11,12 +12,17 @@ vi.mock('@web-alchemy/fonttools', () => ({
 	instantiateVariableFont: mockInstantiateVariableFont,
 }))
 
+vi.mock('../core/convert.js', () => ({
+	convertToWoff2: vi.fn(),
+}))
+
 const MOCK_INPUT = new Uint8Array([0, 1, 2, 3])
 const MOCK_CONDENSED = new Uint8Array([10, 11, 12])
 const MOCK_SEMICONDENSED = new Uint8Array([20, 21, 22])
 
 beforeEach(() => {
 	mockInstantiateVariableFont.mockReset()
+	vi.mocked(convertToWoff2).mockReset()
 })
 
 describe('clampFont', () => {
@@ -100,6 +106,33 @@ describe('clampFont', () => {
 		expect(results[0].buffer).toBe(MOCK_CONDENSED)
 		expect(results[1].name).toBe('SemiCondensed')
 		expect(results[1].buffer).toBe(MOCK_SEMICONDENSED)
+	})
+
+	it('defaults to ttf format', async () => {
+		mockInstantiateVariableFont.mockResolvedValueOnce(MOCK_CONDENSED)
+
+		const results = await clampFont(MOCK_INPUT, {
+			subfamilies: [{ name: 'Condensed', axes: { wdth: 75 } }],
+		})
+
+		expect(results[0].format).toBe('ttf')
+		expect(vi.mocked(convertToWoff2)).not.toHaveBeenCalled()
+	})
+
+	it('converts output to woff2 when format is specified', async () => {
+		// wOF2 magic bytes: 0x774F4632
+		const MOCK_WOFF2 = new Uint8Array([0x77, 0x4f, 0x46, 0x32])
+		mockInstantiateVariableFont.mockResolvedValueOnce(MOCK_CONDENSED)
+		vi.mocked(convertToWoff2).mockResolvedValueOnce(MOCK_WOFF2)
+
+		const results = await clampFont(MOCK_INPUT, {
+			format: 'woff2',
+			subfamilies: [{ name: 'Condensed', axes: { wdth: 75 } }],
+		})
+
+		expect(vi.mocked(convertToWoff2)).toHaveBeenCalledWith(MOCK_CONDENSED)
+		expect(results[0].buffer).toBe(MOCK_WOFF2)
+		expect(results[0].format).toBe('woff2')
 	})
 
 	it('preserves subfamily order in results', async () => {

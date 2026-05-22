@@ -1,27 +1,98 @@
-// site/src/app/page.tsx — vfclamp.com landing page
+// vfClamp landing page — hero, how it works, usage, WOFF2, REST API
+import CodeBlock from "../components/CodeBlock"
+import SiteFooter from "../components/SiteFooter"
+import { version } from "../../../package.json"
+import { version as siteVersion } from "../../package.json"
+
 export default function Home() {
 	return (
-		<main className="flex-1 max-w-3xl mx-auto px-6 py-20 w-full">
-			<header className="mb-16">
-				<p className="text-sm font-mono text-neutral-500 mb-3">npm install vf-clamp</p>
-				<h1 className="text-4xl font-bold tracking-tight mb-4">vf-clamp</h1>
-				<p className="text-lg text-neutral-400 leading-relaxed">
-					Restrict a variable font&apos;s axis ranges to a specific subfamily scope.
-					Like <code className="text-neutral-300 bg-neutral-800 px-1 py-0.5 rounded text-sm">clamp()</code> for type design.
-				</p>
-			</header>
+		<main className="flex flex-col items-center px-6 py-20 gap-24">
 
-			<section className="mb-14">
-				<h2 className="text-xs font-mono text-neutral-500 uppercase tracking-widest mb-4">Install</h2>
-				<pre className="bg-neutral-900 border border-neutral-800 rounded-lg p-4 text-sm font-mono text-neutral-200 overflow-x-auto">
-					<code>npm install vf-clamp</code>
-				</pre>
+			{/* Hero */}
+			<section className="w-full max-w-2xl lg:max-w-5xl flex flex-col gap-6">
+				<div className="flex flex-col gap-2">
+					<p className="text-xs uppercase tracking-widest opacity-50">vf-clamp</p>
+					<h1 className="text-4xl lg:text-8xl xl:text-9xl" style={{ fontFamily: "var(--font-merriweather), serif", fontVariationSettings: '"wght" 300, "opsz" 144', lineHeight: "1.05em" }}>
+						Restrict the range,<br />
+						<span style={{ opacity: 0.5, fontStyle: "italic" }}>keep what varies.</span>
+					</h1>
+				</div>
+				<div className="flex items-center gap-4">
+					<code className="text-sm font-mono bg-white/5 px-3 py-1.5 rounded opacity-80">
+						npm install vf-clamp
+					</code>
+					<a
+						href="https://github.com/Liiift-Studio/vf-clamp"
+						target="_blank"
+						rel="noopener noreferrer"
+						className="text-sm opacity-50 hover:opacity-100 transition-opacity"
+					>
+						GitHub ↗
+					</a>
+				</div>
+				<div className="flex flex-wrap gap-x-4 gap-y-1 text-xs opacity-50 tracking-wide">
+					<span>TypeScript</span><span>·</span>
+					<span>fonttools varLib.instancer</span><span>·</span>
+					<span>Pyodide WASM</span><span>·</span>
+					<span>TTF + WOFF2 output</span>
+				</div>
+				<p className="text-base opacity-60 leading-relaxed max-w-lg">
+					vf-clamp wraps fonttools&rsquo; varLib.instancer in a zero-install WASM runtime.
+					Pass in a variable font and a map of axis constraints — pin an axis to remove it,
+					restrict it to a sub-range, or leave it untouched. The output is a smaller,
+					self-contained font trimmed to exactly the design space you declared.
+				</p>
 			</section>
 
-			<section className="mb-14">
-				<h2 className="text-xs font-mono text-neutral-500 uppercase tracking-widest mb-4">Usage</h2>
-				<pre className="bg-neutral-900 border border-neutral-800 rounded-lg p-4 text-sm font-mono text-neutral-200 overflow-x-auto leading-relaxed">
-					<code>{`import { clampFont } from 'vf-clamp'
+			{/* How it works */}
+			<section className="w-full max-w-2xl lg:max-w-5xl flex flex-col gap-6">
+				<p className="text-xs uppercase tracking-widest opacity-50">How it works</p>
+				<div className="grid grid-cols-1 sm:grid-cols-2 gap-12 text-sm leading-relaxed opacity-70 prose-grid">
+					<div className="flex flex-col gap-3">
+						<p className="font-semibold opacity-100 text-base">Pin an axis to lock it</p>
+						<p>
+							Setting an axis to a number fixes it at that value and removes it from the
+							output font&rsquo;s fvar table. Unused glyph masters and gvar deltas are
+							stripped, so the result is a smaller static-like font.
+						</p>
+					</div>
+					<div className="flex flex-col gap-3">
+						<p className="font-semibold opacity-100 text-base">Range-restrict to slim the space</p>
+						<p>
+							Passing <code className="text-xs font-mono">&#123; min, max &#125;</code> keeps
+							the axis variable but clips it to that sub-range. Masters outside the bounds are
+							pruned — a 100–900 weight axis becomes a tight 400–700 slice without changing
+							how the axis behaves inside that range.
+						</p>
+					</div>
+					<div className="flex flex-col gap-3">
+						<p className="font-semibold opacity-100 text-base">No Python required</p>
+						<p>
+							fonttools runs inside Pyodide, a Python interpreter compiled to WebAssembly.
+							The Pyodide instance is a shared singleton, so the cold start is paid once
+							per process. Subsequent calls reuse the warm runtime with no overhead.
+						</p>
+					</div>
+					<div className="flex flex-col gap-3">
+						<p className="font-semibold opacity-100 text-base">Multiple subfamilies in one call</p>
+						<p>
+							One <code className="text-xs font-mono">clampFont()</code> call produces any
+							number of restricted variants from the same source font. Subfamilies are
+							processed sequentially against the shared Pyodide instance. Output is an
+							array of named buffers ready to write to disk or upload.
+						</p>
+					</div>
+				</div>
+			</section>
+
+			{/* Usage */}
+			<section className="w-full max-w-2xl lg:max-w-5xl flex flex-col gap-6">
+				<p className="text-xs uppercase tracking-widest opacity-50">Usage</p>
+				<div className="flex flex-col gap-8 text-sm">
+
+					<div className="flex flex-col gap-3">
+						<p className="opacity-50">Pin and range-restrict axes</p>
+						<CodeBlock code={`import { clampFont } from 'vf-clamp'
 import { readFile, writeFile } from 'fs/promises'
 
 const source = await readFile('Omnes-VF.ttf')
@@ -33,79 +104,94 @@ const results = await clampFont(source, {
 
     // restrict wdth to a range — axis stays variable
     { name: 'SemiCondensed', axes: { wdth: { min: 87.5, max: 100 } } },
-
-    // mixed: pin width, keep full weight range
-    { name: 'Narrow', axes: { wdth: 62.5 } },
   ],
 })
 
 for (const result of results) {
   await writeFile(\`Omnes-\${result.name}-VF.ttf\`, result.buffer)
-}`}</code>
-				</pre>
-			</section>
+}`} />
+					</div>
 
-			<section className="mb-14">
-				<h2 className="text-xs font-mono text-neutral-500 uppercase tracking-widest mb-4">Axis values</h2>
-				<div className="space-y-4 text-sm text-neutral-400">
-					<div className="flex gap-4">
-						<code className="text-neutral-300 bg-neutral-800 px-2 py-1 rounded shrink-0">number</code>
-						<span>Pin an axis to a single value. The axis is removed from the output font.</span>
+					<div className="flex flex-col gap-3">
+						<p className="opacity-50">Output as WOFF2</p>
+						<CodeBlock code={`const results = await clampFont(source, {
+  format: 'woff2',
+  subfamilies: [
+    { name: 'Text', axes: { wght: { min: 400, max: 700 } } },
+  ],
+})
+
+// result.buffer is a valid WOFF2 file — Brotli-compressed
+await writeFile('Omnes-Text-VF.woff2', results[0].buffer)`} />
 					</div>
-					<div className="flex gap-4">
-						<code className="text-neutral-300 bg-neutral-800 px-2 py-1 rounded shrink-0">{'{ min, max }'}</code>
-						<span>Restrict an axis to a range. The axis stays variable within those bounds.</span>
+
+					<div className="flex flex-col gap-3">
+						<p className="opacity-50">Axis value reference</p>
+						<table className="w-full text-xs">
+							<thead>
+								<tr className="opacity-50 text-left">
+									<th className="pb-2 pr-6 font-normal">Value</th>
+									<th className="pb-2 font-normal">Effect</th>
+								</tr>
+							</thead>
+							<tbody className="opacity-70">
+								<tr className="border-t border-white/10 hover:bg-white/5 transition-colors"><td className="py-2 pr-6 font-mono">number</td><td className="py-2">Pin axis at value — removed from output design space</td></tr>
+								<tr className="border-t border-white/10 hover:bg-white/5 transition-colors"><td className="py-2 pr-6 font-mono">&#123; min, max &#125;</td><td className="py-2">Restrict to range — axis stays variable within bounds</td></tr>
+								<tr className="border-t border-white/10 hover:bg-white/5 transition-colors"><td className="py-2 pr-6 font-mono">null</td><td className="py-2">Omit — axis keeps its full original range</td></tr>
+								<tr className="border-t border-white/10 hover:bg-white/5 transition-colors"><td className="py-2 pr-6 font-mono italic opacity-50">omitted</td><td className="py-2">Same as null — axis unchanged</td></tr>
+							</tbody>
+						</table>
 					</div>
-					<div className="flex gap-4">
-						<code className="text-neutral-300 bg-neutral-800 px-2 py-1 rounded shrink-0">null</code>
-						<span>Drop an axis entirely, fixing it at its current default value.</span>
-					</div>
-					<div className="flex gap-4">
-						<span className="text-neutral-500 italic shrink-0">omitted</span>
-						<span>Axes not listed in the config keep their full original range.</span>
-					</div>
+
 				</div>
 			</section>
 
-			<section className="mb-14">
-				<h2 className="text-xs font-mono text-neutral-500 uppercase tracking-widest mb-4">How it works</h2>
-				<p className="text-sm text-neutral-400 leading-relaxed">
-					vf-clamp wraps{' '}
-					<a href="https://fonttools.readthedocs.io/en/latest/varLib/instancer.html" className="text-neutral-300 underline underline-offset-2">
-						fonttools varLib.instancer
-					</a>{' '}
-					via{' '}
-					<a href="https://github.com/web-alchemy/fonttools" className="text-neutral-300 underline underline-offset-2">
-						@web-alchemy/fonttools
-					</a>{' '}
-					(Pyodide WASM). No Python installation required. Unused masters, gvar deltas,
-					and axis records are trimmed from the output.
+			{/* Inspect a font */}
+			<section className="w-full max-w-2xl lg:max-w-5xl flex flex-col gap-6">
+				<p className="text-xs uppercase tracking-widest opacity-50">Inspect a font</p>
+				<p className="text-sm opacity-60 leading-relaxed max-w-lg">
+					<code className="text-xs font-mono">getInstances()</code> reads the fvar table and returns every axis
+					and named instance defined in the font — useful for discovering what can be clamped
+					before building a subfamily config.
 				</p>
+				<CodeBlock code={`import { getInstances } from 'vf-clamp'
+import { readFile } from 'fs/promises'
+
+const font = await readFile('MyFont-VF.ttf')
+const { axes, instances } = await getInstances(font)
+
+// axes: [{ tag: 'wght', minimum: 100, default: 400, maximum: 900, name: 'Weight' }, ...]
+// instances: [{ name: 'Regular', coordinates: { wght: 400 } }, ...]`} />
 			</section>
 
-			<section>
-				<h2 className="text-xs font-mono text-neutral-500 uppercase tracking-widest mb-4">API microservice</h2>
-				<p className="text-sm text-neutral-400 leading-relaxed mb-4">
-					vfclamp.com exposes a REST endpoint for server-side use. Accepts a font URL and returns restricted variants as base64.
+			{/* REST API */}
+			<section className="w-full max-w-2xl lg:max-w-5xl flex flex-col gap-6">
+				<p className="text-xs uppercase tracking-widest opacity-50">REST API</p>
+				<p className="text-sm opacity-60 leading-relaxed max-w-lg">
+					vfclamp.com exposes two endpoints for server-to-server use. Both require an API key.
+					Contact <a href="mailto:hello@liiift.studio" className="opacity-100 hover:underline underline-offset-2">hello@liiift.studio</a> to request access.
 				</p>
-				<pre className="bg-neutral-900 border border-neutral-800 rounded-lg p-4 text-sm font-mono text-neutral-200 overflow-x-auto leading-relaxed">
-					<code>{`POST https://vfclamp.com/api/clamp
+				<CodeBlock code={`POST https://vfclamp.com/api/clamp
 X-API-Key: <your-key>
-Content-Type: application/json
 
 {
   "fontUrl": "https://cdn.example.com/MyFont-VF.ttf",
+  "format": "woff2",
   "subfamilies": [
-    { "name": "Condensed", "axes": { "wdth": 75 } }
+    { "name": "Text", "axes": { "wght": { "min": 400, "max": 700 } } }
   ]
-}`}</code>
-				</pre>
+}
+// → { results: [{ name, data, format, size }] }
+
+POST https://vfclamp.com/api/instances
+X-API-Key: <your-key>
+
+{ "fontUrl": "https://cdn.example.com/MyFont-VF.ttf" }
+// → { axes: [...], instances: [...] }`} />
 			</section>
 
-			<footer className="mt-20 pt-8 border-t border-neutral-800 text-xs text-neutral-600 flex justify-between">
-				<span>vf-clamp by <a href="https://liiift.studio" className="text-neutral-500 hover:text-neutral-400">Liiift Studio</a></span>
-				<a href="https://github.com/Liiift-Studio/vf-clamp" className="text-neutral-500 hover:text-neutral-400">GitHub</a>
-			</footer>
+			<SiteFooter current="vfClamp" npmVersion={version} siteVersion={siteVersion} />
+
 		</main>
 	)
 }
