@@ -13,7 +13,7 @@ export default defineConfig({
 			fileName: (format) => `index.${format === 'es' ? 'js' : 'cjs'}`,
 		},
 		rollupOptions: {
-			external: ['@web-alchemy/fonttools'],
+			external: ['@web-alchemy/fonttools', /^node:/],
 		},
 	},
 })
