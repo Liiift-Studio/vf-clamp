@@ -1,6 +1,7 @@
-// vfClamp landing page — hero, how it works, usage, WOFF2, REST API
+// vfClamp landing page — hero, demo, how it works, usage, WOFF2, REST API
 import CodeBlock from "../components/CodeBlock"
 import SiteFooter from "../components/SiteFooter"
+import Demo from "../components/Demo"
 import { version } from "../../../package.json"
 import { version as siteVersion } from "../../package.json"
 
@@ -44,7 +45,15 @@ export default function Home() {
 				</p>
 			</section>
 
-			{/* How it works */}
+			{/* Interactive demo */}
+		<section className="w-full max-w-2xl lg:max-w-5xl flex flex-col gap-4">
+			<p className="text-xs uppercase tracking-widest opacity-50">Interactive demo</p>
+			<div className="rounded-xl -mx-2 px-8 py-8" style={{ background: "rgba(0,0,0,0.2)" }}>
+				<Demo />
+			</div>
+		</section>
+
+		{/* How it works */}
 			<section className="w-full max-w-2xl lg:max-w-5xl flex flex-col gap-6">
 				<p className="text-xs uppercase tracking-widest opacity-50">How it works</p>
 				<div className="grid grid-cols-1 sm:grid-cols-2 gap-12 text-sm leading-relaxed opacity-70 prose-grid">
