@@ -4,8 +4,8 @@ import type { AxisValue, ClampOptions, ClampResult } from './types.js'
 
 /** Convert a vf-clamp AxisValue to the format expected by @web-alchemy/fonttools */
 function toInstancerValue(value: AxisValue): number | [number, number] | null {
-	if (value === null) return null
 	if (typeof value === 'number') return value
+	if (value === null) return null
 	return [value.min, value.max]
 }
 
@@ -23,16 +23,25 @@ export async function clampFont(
 ): Promise<ClampResult[]> {
 	if (options.subfamilies.length === 0) return []
 
+	// Pyodide's FS.writeFile requires Uint8Array or Buffer, not a raw ArrayBuffer.
+	// fetch().arrayBuffer() returns ArrayBuffer — normalise here so callers don't need to.
+	const bytes: Uint8Array | Buffer =
+		input instanceof ArrayBuffer ? new Uint8Array(input) : input
+
 	const results: ClampResult[] = []
 
 	for (const subfamily of options.subfamilies) {
 		const instancerAxes: Record<string, number | [number, number] | null> = {}
 
 		for (const [tag, value] of Object.entries(subfamily.axes)) {
-			instancerAxes[tag] = toInstancerValue(value)
+			// null means "omit this axis" — skip it so the axis keeps its full range.
+			// Passing JS null to Pyodide produces JsNull (not Python None) which fonttools rejects.
+			if (value !== null) {
+				instancerAxes[tag] = toInstancerValue(value)
+			}
 		}
 
-		const buffer = await instantiateVariableFont(input, instancerAxes)
+		const buffer = await instantiateVariableFont(bytes, instancerAxes)
 		results.push({ name: subfamily.name, buffer })
 	}
 

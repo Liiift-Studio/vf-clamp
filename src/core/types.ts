@@ -13,11 +13,12 @@ export interface AxisRange {
 
 /**
  * What to do with one axis when clamping a variable font:
- * - number: pin to that value (axis removed from output)
+ * - number: pin to that value (axis locked and removed from output design space)
  * - AxisRange: restrict to [min, max] (axis stays variable within that range)
- * - null: drop the axis entirely (uses its current default value)
+ * - null: omit this axis from the instancer call — axis keeps its full original range
  *
- * Axes omitted from the config keep their full original range.
+ * Axes not listed in the config also keep their full original range.
+ * Note: JS→Python bridge limitations prevent true axis dropping (fonttools' Python `None` semantic).
  */
 export type AxisValue = PinnedAxis | AxisRange | null
 

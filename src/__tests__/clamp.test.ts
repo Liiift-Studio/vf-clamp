@@ -2,7 +2,10 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { clampFont } from '../core/clamp.js'
 
-const mockInstantiateVariableFont = vi.fn()
+// vi.mock is hoisted — use vi.hoisted() so the variable is defined before the factory runs
+const { mockInstantiateVariableFont } = vi.hoisted(() => ({
+	mockInstantiateVariableFont: vi.fn(),
+}))
 
 vi.mock('@web-alchemy/fonttools', () => ({
 	instantiateVariableFont: mockInstantiateVariableFont,
@@ -46,14 +49,15 @@ describe('clampFont', () => {
 		expect(mockInstantiateVariableFont).toHaveBeenCalledWith(MOCK_INPUT, { wdth: [87.5, 100] })
 	})
 
-	it('drops an axis when null is passed', async () => {
+	it('omits a null axis from the instancer call (keeps full range)', async () => {
 		mockInstantiateVariableFont.mockResolvedValueOnce(MOCK_CONDENSED)
 
 		await clampFont(MOCK_INPUT, {
 			subfamilies: [{ name: 'Narrow', axes: { wdth: null } }],
 		})
 
-		expect(mockInstantiateVariableFont).toHaveBeenCalledWith(MOCK_INPUT, { wdth: null })
+		// null → axis omitted from the instancer call; JS null cannot safely bridge to Python None
+		expect(mockInstantiateVariableFont).toHaveBeenCalledWith(MOCK_INPUT, {})
 	})
 
 	it('handles mixed axis configs in one subfamily', async () => {
@@ -72,10 +76,10 @@ describe('clampFont', () => {
 			],
 		})
 
+		// ital: null → omitted from instancer call (null axes are skipped)
 		expect(mockInstantiateVariableFont).toHaveBeenCalledWith(MOCK_INPUT, {
 			wdth: 75,
 			wght: [300, 700],
-			ital: null,
 		})
 	})
 
