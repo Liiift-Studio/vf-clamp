@@ -2,7 +2,7 @@
 // Demo.tsx — interactive vf-clamp demo: load a font, configure axis clamps,
 // get live validation + code, optionally download the restricted font.
 
-import { useState, useCallback, useRef } from 'react'
+import { useState, useCallback, useRef, useEffect } from 'react'
 import type { AxisDefinition, FontInstance } from 'vf-clamp'
 
 // ── Types ────────────────────────────────────────────────────────────────────
@@ -292,7 +292,34 @@ export default function Demo() {
 	const [processing, setProcessing]   = useState(false)
 	const [processError, setProcessError] = useState<string | null>(null)
 
-	const isLoadingRef = useRef(false)
+	const isLoadingRef  = useRef(false)
+	const containerRef  = useRef<HTMLDivElement>(null)
+	const warmedUpRef   = useRef(false)
+
+	// Fire a lightweight warmup ping when the demo section scrolls into view.
+	// Covers the cost of one invocation only for users who actually see the demo.
+	useEffect(() => {
+		const el = containerRef.current
+		if (!el) return
+		const observer = new IntersectionObserver(
+			(entries) => {
+				if (entries[0].isIntersecting && !warmedUpRef.current) {
+					warmedUpRef.current = true
+					observer.disconnect()
+					// POST a 1-byte body — enough to trigger preparePyodide() on the server
+					// without doing any real work. Fire-and-forget; errors are benign.
+					fetch('/api/demo/instances', {
+						method: 'POST',
+						headers: { 'Content-Type': 'application/octet-stream' },
+						body: new Uint8Array([0]),
+					}).catch(() => { /* warmup failure is non-fatal */ })
+				}
+			},
+			{ threshold: 0.1 }
+		)
+		observer.observe(el)
+		return () => observer.disconnect()
+	}, [])
 
 	const loadFont = useCallback(async (buffer: Uint8Array, name: string) => {
 		if (isLoadingRef.current) return
@@ -429,7 +456,7 @@ export default function Demo() {
 		)
 
 	return (
-		<div className="w-full flex flex-col gap-8">
+		<div ref={containerRef} className="w-full flex flex-col gap-8">
 
 			{/* Upload zone */}
 			<div
