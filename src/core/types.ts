@@ -46,3 +46,33 @@ export interface ClampResult {
 	/** Restricted font binary — write to .ttf or pass to a WOFF2 encoder */
 	buffer: Uint8Array
 }
+
+/** One axis defined in the font's fvar table */
+export interface AxisDefinition {
+	/** Four-character axis tag, e.g. "wght", "wdth" */
+	tag: string
+	/** Human-readable axis name from the font's name table */
+	name: string
+	/** Minimum value on the axis */
+	minimum: number
+	/** Default value (used when axis is not explicitly set) */
+	default: number
+	/** Maximum value on the axis */
+	maximum: number
+}
+
+/** One named instance from the font's fvar table */
+export interface FontInstance {
+	/** Instance name from the font's name table, e.g. "Regular", "Bold Condensed" */
+	name: string
+	/** Axis coordinates for this instance, e.g. { wght: 400, wdth: 100 } */
+	coordinates: Record<string, number>
+}
+
+/** Result of getInstances() — describes the full design space of a variable font */
+export interface FontInstancesResult {
+	/** All variable axes defined in the font */
+	axes: AxisDefinition[]
+	/** All named instances defined in the font */
+	instances: FontInstance[]
+}

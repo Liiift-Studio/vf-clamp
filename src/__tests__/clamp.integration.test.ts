@@ -4,6 +4,7 @@ import { readFileSync } from 'node:fs'
 import { join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { clampFont } from '../core/clamp.js'
+import { getInstances } from '../core/instances.js'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const FIXTURES = join(__dirname, '../../fixtures')
@@ -75,5 +76,50 @@ describe('clampFont — integration (real Pyodide + fonttools)', () => {
 		expect(results[0].buffer.byteLength).toBeGreaterThan(0)
 		// Omitting all axes returns the full font (no reduction in size)
 		expect(results[0].buffer.byteLength).toBeGreaterThanOrEqual(input.byteLength * 0.9)
+	}, 120_000)
+})
+
+describe('getInstances — integration (real Pyodide + fonttools)', () => {
+	it('returns axes and named instances for Inter Variable', async () => {
+		const input = interVF()
+		const result = await getInstances(input)
+
+		// Inter has wght and slnt axes
+		expect(result.axes.length).toBeGreaterThanOrEqual(1)
+		const wghtAxis = result.axes.find((a) => a.tag === 'wght')
+		expect(wghtAxis).toBeDefined()
+		expect(wghtAxis!.minimum).toBe(100)
+		expect(wghtAxis!.maximum).toBe(900)
+
+		// Inter has multiple named instances (Thin, Light, Regular, Medium, SemiBold, Bold, ExtraBold, Black)
+		expect(result.instances.length).toBeGreaterThan(0)
+		const names = result.instances.map((i) => i.name)
+		expect(names).toContain('Regular')
+
+		const regular = result.instances.find((i) => i.name === 'Regular')
+		expect(regular!.coordinates.wght).toBe(400)
+	}, 120_000)
+
+	it('each instance has coordinates matching its axis tags', async () => {
+		const input = interVF()
+		const { axes, instances } = await getInstances(input)
+		const axisTags = new Set(axes.map((a) => a.tag))
+
+		for (const inst of instances) {
+			for (const tag of Object.keys(inst.coordinates)) {
+				expect(axisTags.has(tag)).toBe(true)
+			}
+		}
+	}, 120_000)
+
+	it('pinning wght removes the wght axis from the output font', async () => {
+		// Pinning wght to a fixed value should remove it from the output fvar
+		const input = interVF()
+		const [pinned] = await clampFont(input, {
+			subfamilies: [{ name: 'Regular', axes: { wght: 400 } }],
+		})
+		const result = await getInstances(pinned.buffer)
+		const wghtAxis = result.axes.find((a) => a.tag === 'wght')
+		expect(wghtAxis).toBeUndefined()
 	}, 120_000)
 })
