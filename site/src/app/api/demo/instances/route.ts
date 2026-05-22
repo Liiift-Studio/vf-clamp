@@ -2,10 +2,15 @@
 // Accepts a raw font binary and returns { axes, instances }.
 import { type NextRequest, NextResponse } from 'next/server'
 import { getInstances } from 'vf-clamp'
+import { checkRateLimit, getClientIp } from '../../../../lib/rateLimit'
 
 const MAX_BYTES = 20 * 1024 * 1024 // 20 MB
 
 export async function POST(req: NextRequest) {
+	if (!checkRateLimit(getClientIp(req))) {
+		return NextResponse.json({ error: 'Too many requests — please wait a moment' }, { status: 429 })
+	}
+
 	const buffer = await req.arrayBuffer()
 
 	if (buffer.byteLength === 0) {

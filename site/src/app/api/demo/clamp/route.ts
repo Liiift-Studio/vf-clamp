@@ -3,6 +3,7 @@
 import { type NextRequest, NextResponse } from 'next/server'
 import { clampFont } from 'vf-clamp'
 import type { SubfamilyConfig, OutputFormat } from 'vf-clamp'
+import { checkRateLimit, getClientIp } from '../../../../lib/rateLimit'
 
 const MAX_BYTES = 20 * 1024 * 1024 // 20 MB
 
@@ -14,6 +15,10 @@ interface DemoClampRequest {
 }
 
 export async function POST(req: NextRequest) {
+	if (!checkRateLimit(getClientIp(req))) {
+		return NextResponse.json({ error: 'Too many requests — please wait a moment' }, { status: 429 })
+	}
+
 	let body: DemoClampRequest
 	try {
 		body = await req.json()

@@ -196,6 +196,7 @@ function AxisRow({
 						value={config.pin}
 						onChange={(e) => onChange({ ...config, pin: Number(e.target.value) })}
 						className="flex-1"
+						style={{ touchAction: 'none' }}
 						aria-label={`${axis.name} pin value`}
 					/>
 					<input
@@ -223,6 +224,7 @@ function AxisRow({
 							value={config.rangeMin}
 							onChange={(e) => onChange({ ...config, rangeMin: Number(e.target.value) })}
 							className="flex-1"
+							style={{ touchAction: 'none' }}
 							aria-label={`${axis.name} range minimum`}
 						/>
 						<input
@@ -246,6 +248,7 @@ function AxisRow({
 							value={config.rangeMax}
 							onChange={(e) => onChange({ ...config, rangeMax: Number(e.target.value) })}
 							className="flex-1"
+							style={{ touchAction: 'none' }}
 							aria-label={`${axis.name} range maximum`}
 						/>
 						<input
@@ -354,7 +357,7 @@ export default function Demo() {
 	}, [])
 
 	const handleLoadDefault = useCallback(async () => {
-		if (loadState !== 'idle') return
+		if (loadState !== 'idle' && loadState !== 'error') return
 		setLoadState('loading')
 		try {
 			const res = await fetch(DEFAULT_FONT_URL)
@@ -465,22 +468,27 @@ export default function Demo() {
 				className="flex flex-col sm:flex-row items-start sm:items-center gap-4 rounded-xl border border-dashed border-white/15 py-5 px-5 transition-colors hover:border-white/25"
 			>
 				<div className="flex-1 min-w-0">
-					{loadState === 'idle' && (
-						<p className="text-sm opacity-50">
-							Load{' '}
-							<button
-								onClick={handleLoadDefault}
-								className="underline underline-offset-2 hover:opacity-100 transition-opacity"
-							>
-								Inter Variable
-							</button>{' '}
-							or drop any variable font to explore its axes
-						</p>
+					{(loadState === 'idle' || loadState === 'error') && (
+						<div className="flex flex-col gap-1.5">
+							<p className="text-sm opacity-60">
+								Load{' '}
+								<button
+									onClick={handleLoadDefault}
+									className="underline underline-offset-2 hover:opacity-100 transition-opacity"
+								>
+									Inter Variable
+								</button>{' '}
+								or drop any variable font to explore its axes
+							</p>
+							{loadState === 'error' && loadError && (
+								<p className="text-xs text-red-400">{loadError}</p>
+							)}
+						</div>
 					)}
 					{loadState === 'loading' && (
 						<div className="flex flex-col gap-1">
-							<p className="text-sm opacity-60 animate-pulse">Reading font axes…</p>
-							<p className="text-xs opacity-30">
+							<p className="text-sm opacity-70 animate-pulse">Reading font axes…</p>
+							<p className="text-xs opacity-40">
 								First load may take 10–20 s while the font engine warms up
 							</p>
 						</div>
@@ -492,9 +500,6 @@ export default function Demo() {
 								{axes.map((a) => `${a.tag} ${a.minimum}–${a.maximum}`).join(' · ')}
 							</p>
 						</div>
-					)}
-					{loadState === 'error' && (
-						<p className="text-sm text-red-400">{loadError}</p>
 					)}
 				</div>
 				<label className="text-xs px-3 py-1.5 rounded-full border border-white/20 cursor-pointer hover:bg-white/5 transition-colors shrink-0">
