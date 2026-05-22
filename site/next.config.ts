@@ -1,9 +1,13 @@
-// site/next.config.ts — vfclamp.com site + API microservice
-import type { NextConfig } from 'next'
+// next.config.ts — synced from type-tools/shared/site/next.config.ts. Do not edit directly.
+import type { NextConfig } from "next"
+import path from "path"
 
-const config: NextConfig = {
-	// Prevent bundling of Pyodide-based packages — must run as Node.js server-side only
-	serverExternalPackages: ['@web-alchemy/fonttools', 'vf-clamp'],
+const nextConfig: NextConfig = {
+	turbopack: {
+		// Set workspace root so Turbopack can resolve the sibling npm package
+		// and imports like ../../../package.json from within the site/ subdirectory.
+		root: path.resolve(__dirname, ".."),
+	},
 }
 
-export default config
+export default nextConfig
