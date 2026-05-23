@@ -3,5 +3,11 @@
 	"framework": "nextjs",
 	"installCommand": "npm install && cd site && npm install",
 	"buildCommand": "npm run build && cd site && npx next build",
-	"outputDirectory": "site/.next"
+	"outputDirectory": "site/.next",
+	"crons": [
+		{
+			"path": "/api/warmup",
+			"schedule": "*/5 * * * *"
+		}
+	]
 }
