@@ -99,12 +99,22 @@ function computeGroups(
 	const primary = primaryAxis(axes)
 	if (!primary) return []
 
+	// Secondary axes sorted by number of distinct instance values descending.
+	// More-varied axes group instances more meaningfully; axes where every
+	// instance shares the same value (free axes) contribute nothing and sort last.
+	const secondaryAxes = axes
+		.filter((ax) => ax.tag !== primary.tag)
+		.sort((ax1, ax2) => {
+			const d1 = new Set(instances.map((i) => i.coordinates[ax1.tag] ?? ax1.default)).size
+			const d2 = new Set(instances.map((i) => i.coordinates[ax2.tag] ?? ax2.default)).size
+			return d2 - d1
+		})
+
 	// Sort by secondary axes first so instances sharing the same non-primary
 	// coordinates are contiguous — e.g. all SemiExpanded instances stay together
-	// before the sort by wght, enabling correct adjacent-run detection.
+	// before ordering by wght, enabling correct adjacent-run detection.
 	const sorted = [...instances].sort((a, b) => {
-		for (const axis of axes) {
-			if (axis.tag === primary.tag) continue
+		for (const axis of secondaryAxes) {
 			const av = a.coordinates[axis.tag] ?? axis.default
 			const bv = b.coordinates[axis.tag] ?? axis.default
 			if (av !== bv) return av - bv
