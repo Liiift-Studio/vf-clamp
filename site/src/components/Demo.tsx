@@ -54,21 +54,17 @@ function generateCode(groups: InstanceGroup[], fontName: string, format: OutputF
 	const safe = fontName.replace(/\s+/g, '-') || 'MyFont-VF'
 	const ext  = FORMAT_EXT[format]
 
-	const subLines = groups.flatMap((group) => {
+	const outputLines = groups.flatMap((group) => {
 		const first = group.instances[0]
 		const last  = group.instances[group.instances.length - 1]
 		const name  = group.instances.length === 1 ? first.name : `${first.name}–${last.name}`
-		const axisEntries = Object.entries(group.axisRanges).map(([tag, r]) =>
-			r.min === r.max
-				? `        ${tag}: ${r.min},`
-				: `        ${tag}: { min: ${r.min}, max: ${r.max} },`,
-		)
+		const instanceList = group.instances.map((i) => `        '${i.name}',`).join('\n')
 		return [
 			`    {`,
 			`      name: '${name}',`,
-			`      axes: {`,
-			...axisEntries,
-			`      },`,
+			`      instances: [`,
+			instanceList,
+			`      ],`,
 			`    },`,
 		]
 	})
@@ -83,8 +79,8 @@ function generateCode(groups: InstanceGroup[], fontName: string, format: OutputF
 		``,
 		`const results = await clampFont(source, {`,
 		...formatLine,
-		`  subfamilies: [`,
-		...subLines,
+		`  outputs: [`,
+		...outputLines,
 		`  ],`,
 		`})`,
 		``,
@@ -518,20 +514,17 @@ export default function Demo() {
 		}, TICK_MS)
 
 		try {
-			const configs = groups.map((group) => {
+			const outputs = groups.map((group) => {
 				const first = group.instances[0]
 				const last  = group.instances[group.instances.length - 1]
 				const name  = group.instances.length === 1 ? first.name : `${first.name}–${last.name}`
-				const axesOut: Record<string, number | { min: number; max: number }> = {}
-				for (const [tag, r] of Object.entries(group.axisRanges))
-					axesOut[tag] = r.min === r.max ? r.min : r
-				return { name, axes: axesOut }
+				return { name, instances: group.instances.map((i) => i.name) }
 			})
 
 			const res = await fetch('/api/demo/clamp', {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({ font: toBase64(fontBuffer), subfamilies: configs, format: outputFormat }),
+				body: JSON.stringify({ font: toBase64(fontBuffer), outputs, format: outputFormat }),
 			})
 			const json = await res.json()
 			if (!res.ok) throw new Error(json.error ?? `HTTP ${res.status}`)

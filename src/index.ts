@@ -7,10 +7,11 @@ export type {
 	AxisRange,
 	PinnedAxis,
 	OutputFormat,
-	SubfamilyConfig,
+	OutputConfig,
 	ClampOptions,
 	ClampResult,
 	AxisDefinition,
 	FontInstance,
 	FontInstancesResult,
+	SubfamilyConfig, // @deprecated — use OutputConfig
 } from './core/types.js'

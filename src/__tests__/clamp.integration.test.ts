@@ -18,7 +18,7 @@ describe('clampFont — integration (real Pyodide + fonttools)', () => {
 	it('pinning wght produces a smaller, valid buffer', async () => {
 		const input = interVF()
 		const results = await clampFont(input, {
-			subfamilies: [{ name: 'Regular', axes: { wght: 400 } }],
+			outputs: [{ name: 'Regular', axes: { wght: 400 } }],
 		})
 
 		expect(results).toHaveLength(1)
@@ -30,7 +30,7 @@ describe('clampFont — integration (real Pyodide + fonttools)', () => {
 	it('range-restricting wght produces a smaller, valid buffer', async () => {
 		const input = interVF()
 		const results = await clampFont(input, {
-			subfamilies: [{ name: 'Text', axes: { wght: { min: 400, max: 700 } } }],
+			outputs: [{ name: 'Text', axes: { wght: { min: 400, max: 700 } } }],
 		})
 
 		expect(results[0].buffer.byteLength).toBeGreaterThan(0)
@@ -40,8 +40,8 @@ describe('clampFont — integration (real Pyodide + fonttools)', () => {
 	it('range-restricted output is smaller than the full font but larger than pinned', async () => {
 		const input = interVF()
 		const [ranged, pinned] = await Promise.all([
-			clampFont(input, { subfamilies: [{ name: 'Range', axes: { wght: { min: 400, max: 700 } } }] }),
-			clampFont(input, { subfamilies: [{ name: 'Pinned', axes: { wght: 400 } }] }),
+			clampFont(input, { outputs: [{ name: 'Range', axes: { wght: { min: 400, max: 700 } } }] }),
+			clampFont(input, { outputs: [{ name: 'Pinned', axes: { wght: 400 } }] }),
 		])
 
 		expect(ranged[0].buffer.byteLength).toBeGreaterThan(pinned[0].buffer.byteLength)
@@ -51,7 +51,7 @@ describe('clampFont — integration (real Pyodide + fonttools)', () => {
 	it('produces correct number of results for multiple subfamilies', async () => {
 		const input = interVF()
 		const results = await clampFont(input, {
-			subfamilies: [
+			outputs: [
 				{ name: 'Light', axes: { wght: 300 } },
 				{ name: 'Regular', axes: { wght: 400 } },
 				{ name: 'Bold', axes: { wght: 700 } },
@@ -69,8 +69,8 @@ describe('clampFont — integration (real Pyodide + fonttools)', () => {
 	it('woff2 format output has wOF2 magic bytes and is smaller than TTF', async () => {
 		const input = interVF()
 		const [ttf, woff2] = await Promise.all([
-			clampFont(input, { subfamilies: [{ name: 'Text', axes: { wght: { min: 400, max: 700 } } }] }),
-			clampFont(input, { format: 'woff2', subfamilies: [{ name: 'Text', axes: { wght: { min: 400, max: 700 } } }] }),
+			clampFont(input, { outputs: [{ name: 'Text', axes: { wght: { min: 400, max: 700 } } }] }),
+			clampFont(input, { format: 'woff2', outputs: [{ name: 'Text', axes: { wght: { min: 400, max: 700 } } }] }),
 		])
 
 		// WOFF2 magic: 0x774F4632
@@ -87,7 +87,7 @@ describe('clampFont — integration (real Pyodide + fonttools)', () => {
 		const input = interVF()
 		// null means "omit this axis from the instancer call" — font keeps full range
 		const results = await clampFont(input, {
-			subfamilies: [{ name: 'Upright', axes: { slnt: null } }],
+			outputs: [{ name: 'Upright', axes: { slnt: null } }],
 		})
 
 		expect(results[0].buffer.byteLength).toBeGreaterThan(0)
@@ -133,7 +133,7 @@ describe('getInstances — integration (real Pyodide + fonttools)', () => {
 		// Pinning wght to a fixed value should remove it from the output fvar
 		const input = interVF()
 		const [pinned] = await clampFont(input, {
-			subfamilies: [{ name: 'Regular', axes: { wght: 400 } }],
+			outputs: [{ name: 'Regular', axes: { wght: 400 } }],
 		})
 		const result = await getInstances(pinned.buffer)
 		const wghtAxis = result.axes.find((a) => a.tag === 'wght')

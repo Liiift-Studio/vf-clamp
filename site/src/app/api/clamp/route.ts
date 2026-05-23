@@ -1,13 +1,13 @@
 // site/src/app/api/clamp/route.ts — POST /api/clamp microservice endpoint
 import { type NextRequest, NextResponse } from 'next/server'
 import { clampFont } from 'vf-clamp'
-import type { SubfamilyConfig, OutputFormat } from 'vf-clamp'
+import type { OutputConfig, OutputFormat } from 'vf-clamp'
 
 interface ClampRequest {
-	/** URL of the source variable font (TTF). Fetched server-side — must be publicly accessible. */
+	/** URL of the source variable font. Fetched server-side — must be publicly accessible. */
 	fontUrl: string
 	/** One entry per restricted variant to produce */
-	subfamilies: SubfamilyConfig[]
+	outputs: OutputConfig[]
 	/** Output format — 'ttf' (default), 'otf', 'woff', or 'woff2' */
 	format?: OutputFormat
 }
@@ -56,23 +56,20 @@ export async function POST(req: NextRequest) {
 		return badRequest('Request body must be valid JSON')
 	}
 
-	const { fontUrl, subfamilies, format } = body
+	const { fontUrl, outputs, format } = body
 
 	if (!fontUrl || typeof fontUrl !== 'string') {
 		return badRequest('fontUrl is required and must be a string')
 	}
 
-	if (!Array.isArray(subfamilies) || subfamilies.length === 0) {
-		return badRequest('subfamilies must be a non-empty array')
+	if (!Array.isArray(outputs) || outputs.length === 0) {
+		return badRequest('outputs must be a non-empty array')
 	}
 
-	// Validate subfamilies shape
-	for (const s of subfamilies) {
-		if (!s.name || typeof s.name !== 'string') {
-			return badRequest('Each subfamily must have a name string')
-		}
-		if (!s.axes || typeof s.axes !== 'object') {
-			return badRequest(`Subfamily "${s.name}" must have an axes object`)
+	// Validate outputs shape
+	for (const o of outputs) {
+		if (!o.instances?.length && !o.axes) {
+			return badRequest('Each output must have instances, axes, or both')
 		}
 	}
 
@@ -91,7 +88,7 @@ export async function POST(req: NextRequest) {
 	// Process
 	let clampResults
 	try {
-		clampResults = await clampFont(fontBuffer, { subfamilies, format })
+		clampResults = await clampFont(fontBuffer, { outputs, format })
 	} catch (err) {
 		console.error('clampFont failed:', err)
 		return NextResponse.json(

@@ -1,6 +1,6 @@
 {
 	"name": "vf-clamp",
-	"version": "1.1.1",
+	"version": "2.0.0",
 	"description": "Restrict a variable font's axis ranges to a specific subfamily scope — like CSS clamp() for design space.",
 	"type": "module",
 	"main": "dist/index.cjs",

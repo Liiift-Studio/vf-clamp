@@ -69,16 +69,16 @@ export async function processDardenFont(doc: DardenFontDoc): Promise<{ variants:
 	if (!ttfRes.ok) throw new Error(`Failed to fetch TTF from Sanity CDN: ${ttfRes.status} ${ttfRes.statusText}`)
 	const ttfBuffer = Buffer.from(await ttfRes.arrayBuffer())
 
-	// Parse all subfamily axis configs
-	const subfamilies = vfClampConfig.map(({ subfamily, axesJson }) => ({
+	// Parse all output axis configs
+	const outputs = vfClampConfig.map(({ subfamily, axesJson }) => ({
 		name: subfamily,
-		axes: parseAxesJson(subfamily, axesJson) as Parameters<typeof clampFont>[1]['subfamilies'][0]['axes'],
+		axes: parseAxesJson(subfamily, axesJson) as Parameters<typeof clampFont>[1]['outputs'][0]['axes'],
 	}))
 
 	// Generate TTF and WOFF2 variants in parallel
 	const [ttfResults, woff2Results] = await Promise.all([
-		clampFont(ttfBuffer, { subfamilies, format: 'ttf' }),
-		clampFont(ttfBuffer, { subfamilies, format: 'woff2' }),
+		clampFont(ttfBuffer, { outputs, format: 'ttf' }),
+		clampFont(ttfBuffer, { outputs, format: 'woff2' }),
 	])
 
 	// Upload each result and build patch entries

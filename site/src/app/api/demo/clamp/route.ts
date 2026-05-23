@@ -2,7 +2,7 @@
 // Accepts { font: base64, subfamilies, format? } and returns restricted font buffers.
 import { type NextRequest, NextResponse } from 'next/server'
 import { clampFont } from 'vf-clamp'
-import type { SubfamilyConfig, OutputFormat } from 'vf-clamp'
+import type { OutputConfig, OutputFormat } from 'vf-clamp'
 import { checkRateLimit, getClientIp } from '../../../../lib/rateLimit'
 
 const MAX_BYTES = 20 * 1024 * 1024 // 20 MB
@@ -10,7 +10,7 @@ const MAX_BYTES = 20 * 1024 * 1024 // 20 MB
 interface DemoClampRequest {
 	/** Base64-encoded source font binary */
 	font: string
-	subfamilies: SubfamilyConfig[]
+	outputs: OutputConfig[]
 	format?: OutputFormat
 }
 
@@ -26,11 +26,11 @@ export async function POST(req: NextRequest) {
 		return NextResponse.json({ error: 'Request body must be valid JSON' }, { status: 400 })
 	}
 
-	const { font: fontBase64, subfamilies, format } = body
+	const { font: fontBase64, outputs, format } = body
 
 	if (!fontBase64) return NextResponse.json({ error: 'font is required' }, { status: 400 })
-	if (!Array.isArray(subfamilies) || !subfamilies.length) {
-		return NextResponse.json({ error: 'subfamilies must be a non-empty array' }, { status: 400 })
+	if (!Array.isArray(outputs) || !outputs.length) {
+		return NextResponse.json({ error: 'outputs must be a non-empty array' }, { status: 400 })
 	}
 
 	let fontBuffer: Buffer
@@ -45,7 +45,7 @@ export async function POST(req: NextRequest) {
 	}
 
 	try {
-		const results = await clampFont(fontBuffer, { subfamilies, format })
+		const results = await clampFont(fontBuffer, { outputs, format })
 		return NextResponse.json({
 			results: results.map((r) => ({
 				name: r.name,

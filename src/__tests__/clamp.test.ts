@@ -27,7 +27,7 @@ beforeEach(() => {
 
 describe('clampFont', () => {
 	it('returns empty array when no subfamilies provided', async () => {
-		const results = await clampFont(MOCK_INPUT, { subfamilies: [] })
+		const results = await clampFont(MOCK_INPUT, { outputs: [] })
 		expect(results).toEqual([])
 		expect(mockInstantiateVariableFont).not.toHaveBeenCalled()
 	})
@@ -36,7 +36,7 @@ describe('clampFont', () => {
 		mockInstantiateVariableFont.mockResolvedValueOnce(MOCK_CONDENSED)
 
 		const results = await clampFont(MOCK_INPUT, {
-			subfamilies: [{ name: 'Condensed', axes: { wdth: 75 } }],
+			outputs: [{ name: 'Condensed', axes: { wdth: 75 } }],
 		})
 
 		expect(mockInstantiateVariableFont).toHaveBeenCalledWith(MOCK_INPUT, { wdth: 75 })
@@ -49,7 +49,7 @@ describe('clampFont', () => {
 		mockInstantiateVariableFont.mockResolvedValueOnce(MOCK_CONDENSED)
 
 		await clampFont(MOCK_INPUT, {
-			subfamilies: [{ name: 'SemiCondensed', axes: { wdth: { min: 87.5, max: 100 } } }],
+			outputs: [{ name: 'SemiCondensed', axes: { wdth: { min: 87.5, max: 100 } } }],
 		})
 
 		expect(mockInstantiateVariableFont).toHaveBeenCalledWith(MOCK_INPUT, { wdth: [87.5, 100] })
@@ -59,7 +59,7 @@ describe('clampFont', () => {
 		mockInstantiateVariableFont.mockResolvedValueOnce(MOCK_CONDENSED)
 
 		await clampFont(MOCK_INPUT, {
-			subfamilies: [{ name: 'Narrow', axes: { wdth: null } }],
+			outputs: [{ name: 'Narrow', axes: { wdth: null } }],
 		})
 
 		// null → axis omitted from the instancer call; JS null cannot safely bridge to Python None
@@ -70,7 +70,7 @@ describe('clampFont', () => {
 		mockInstantiateVariableFont.mockResolvedValueOnce(MOCK_CONDENSED)
 
 		await clampFont(MOCK_INPUT, {
-			subfamilies: [
+			outputs: [
 				{
 					name: 'Condensed',
 					axes: {
@@ -95,7 +95,7 @@ describe('clampFont', () => {
 			.mockResolvedValueOnce(MOCK_SEMICONDENSED)
 
 		const results = await clampFont(MOCK_INPUT, {
-			subfamilies: [
+			outputs: [
 				{ name: 'Condensed', axes: { wdth: 75 } },
 				{ name: 'SemiCondensed', axes: { wdth: 87.5 } },
 			],
@@ -112,7 +112,7 @@ describe('clampFont', () => {
 		mockInstantiateVariableFont.mockResolvedValueOnce(MOCK_CONDENSED)
 
 		const results = await clampFont(MOCK_INPUT, {
-			subfamilies: [{ name: 'Condensed', axes: { wdth: 75 } }],
+			outputs: [{ name: 'Condensed', axes: { wdth: 75 } }],
 		})
 
 		expect(results[0].format).toBe('ttf')
@@ -127,7 +127,7 @@ describe('clampFont', () => {
 
 		const results = await clampFont(MOCK_INPUT, {
 			format: 'woff2',
-			subfamilies: [{ name: 'Condensed', axes: { wdth: 75 } }],
+			outputs: [{ name: 'Condensed', axes: { wdth: 75 } }],
 		})
 
 		expect(vi.mocked(convertToWoff2)).toHaveBeenCalledWith(MOCK_CONDENSED)
@@ -140,7 +140,7 @@ describe('clampFont', () => {
 		buffers.forEach((b) => mockInstantiateVariableFont.mockResolvedValueOnce(b))
 
 		const results = await clampFont(MOCK_INPUT, {
-			subfamilies: [
+			outputs: [
 				{ name: 'Narrow', axes: { wdth: 62.5 } },
 				{ name: 'Condensed', axes: { wdth: 75 } },
 				{ name: 'SemiCondensed', axes: { wdth: 87.5 } },

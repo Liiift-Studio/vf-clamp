@@ -22,24 +22,35 @@ export interface AxisRange {
  */
 export type AxisValue = PinnedAxis | AxisRange | null
 
-/** One subfamily variant to produce from the source variable font */
-export interface SubfamilyConfig {
-	/** Identifier for this variant, e.g. "Condensed" or "SemiCondensed" */
-	name: string
+/**
+ * One output variant to produce from the source variable font.
+ * Specify instances, axes, or both — instances set the hull, axes override individual tags.
+ */
+export interface OutputConfig {
+	/** Name for this output — used in ClampResult.name. Defaults to instance range when omitted. */
+	name?: string
 	/**
-	 * Map of axis tag → value.
-	 * Axis tags not listed here keep their full range from the source font.
+	 * Named instances to include. The axis hull (min/max per axis) is computed automatically
+	 * across all listed instances — producing one variable font that spans exactly that range.
+	 * Instance names must match the font's fvar name table exactly.
 	 */
-	axes: Record<string, AxisValue>
+	instances?: string[]
+	/**
+	 * Explicit axis constraints, applied after any instance hull.
+	 * Axes listed here override the hull computed from instances for that tag.
+	 * Axis tags not listed keep their full original range.
+	 */
+	axes?: Record<string, AxisValue>
 }
 
 /** Options passed to clampFont() */
 export interface ClampOptions {
 	/** One entry per restricted variant to produce */
-	subfamilies: SubfamilyConfig[]
+	outputs: OutputConfig[]
 	/**
-	 * Output format — defaults to the input format (TTF→TTF, OTF→OTF, WOFF→WOFF, WOFF2→WOFF2).
-	 * Specify explicitly to transcode: e.g. pass 'woff2' to compress any input to WOFF2.
+	 * Output format — defaults to 'ttf'.
+	 * 'woff' and 'woff2' transcode the result to a web-compressed flavour.
+	 * 'otf' is a passthrough — the instancer preserves the input outline format.
 	 */
 	format?: OutputFormat
 }
@@ -51,13 +62,13 @@ export interface ClampOptions {
  */
 export type OutputFormat = 'ttf' | 'otf' | 'woff' | 'woff2'
 
-/** One output from clampFont() — a restricted variable font for a single subfamily */
+/** One output from clampFont() — a restricted variable font for a single output config */
 export interface ClampResult {
-	/** Matches the SubfamilyConfig name */
+	/** Matches OutputConfig.name (or the auto-derived instance range if name was omitted) */
 	name: string
 	/** Restricted font binary — write to disk or upload; format matches options.format */
 	buffer: Uint8Array
-	/** Format of the buffer — matches options.format, defaults to the input format */
+	/** Format of the buffer — matches options.format, defaults to 'ttf' */
 	format: OutputFormat
 }
 
@@ -90,3 +101,6 @@ export interface FontInstancesResult {
 	/** All named instances defined in the font */
 	instances: FontInstance[]
 }
+
+/** @deprecated Use OutputConfig instead */
+export type SubfamilyConfig = OutputConfig

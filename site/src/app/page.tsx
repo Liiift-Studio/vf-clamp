@@ -106,19 +106,24 @@ export default function Home() {
 				<div className="flex flex-col gap-8 text-sm">
 
 					<div className="flex flex-col gap-3">
-						<p className="opacity-50">Pin and range-restrict axes</p>
+						<p className="opacity-50">From named instances — hull computed automatically</p>
 						<CodeBlock code={`import { clampFont } from 'vf-clamp'
 import { readFile, writeFile } from 'fs/promises'
 
 const source = await readFile('Omnes-VF.ttf')
 
 const results = await clampFont(source, {
-  subfamilies: [
-    // pin wdth to 75 — axis removed from output
-    { name: 'Condensed', axes: { wdth: 75 } },
-
-    // restrict wdth to a range — axis stays variable
-    { name: 'SemiCondensed', axes: { wdth: { min: 87.5, max: 100 } } },
+  outputs: [
+    // one VF spanning the full weight range for Condensed
+    {
+      name: 'Condensed',
+      instances: ['Condensed Thin', 'Condensed Black'],
+    },
+    // one VF for a narrower weight slice of SemiCondensed
+    {
+      name: 'SemiCondensed Text',
+      instances: ['SemiCondensed Light', 'SemiCondensed Bold'],
+    },
   ],
 })
 
@@ -128,16 +133,31 @@ for (const result of results) {
 					</div>
 
 					<div className="flex flex-col gap-3">
-						<p className="opacity-50">Output as WOFF2</p>
+						<p className="opacity-50">From explicit axis ranges</p>
+						<CodeBlock code={`const results = await clampFont(source, {
+  outputs: [
+    // pin wdth to 75 — axis removed from output
+    { name: 'Condensed', axes: { wdth: 75 } },
+
+    // restrict wdth to a range — axis stays variable
+    { name: 'SemiCondensed', axes: { wdth: { min: 87.5, max: 100 } } },
+  ],
+})`} />
+					</div>
+
+					<div className="flex flex-col gap-3">
+						<p className="opacity-50">Mix instances and axes — axes override the hull</p>
 						<CodeBlock code={`const results = await clampFont(source, {
   format: 'woff2',
-  subfamilies: [
-    { name: 'Text', axes: { wght: { min: 400, max: 700 } } },
+  outputs: [
+    {
+      name: 'Condensed Text',
+      instances: ['Condensed Light', 'Condensed Bold'],
+      // clamp the opsz axis independently of the named instance range
+      axes: { opsz: { min: 8, max: 24 } },
+    },
   ],
-})
-
-// result.buffer is a valid WOFF2 file — Brotli-compressed
-await writeFile('Omnes-Text-VF.woff2', results[0].buffer)`} />
+})`} />
 					</div>
 
 					<div className="flex flex-col gap-3">
@@ -192,8 +212,9 @@ X-API-Key: <your-key>
 {
   "fontUrl": "https://cdn.example.com/MyFont-VF.ttf",
   "format": "woff2",
-  "subfamilies": [
-    { "name": "Text", "axes": { "wght": { "min": 400, "max": 700 } } }
+  "outputs": [
+    { "name": "Text", "instances": ["Light", "Bold"] },
+    { "name": "Condensed", "axes": { "wdth": 75 } }
   ]
 }
 // → { results: [{ name, data, format, size }] }
@@ -203,6 +224,64 @@ X-API-Key: <your-key>
 
 { "fontUrl": "https://cdn.example.com/MyFont-VF.ttf" }
 // → { axes: [...], instances: [...] }`} />
+			</section>
+
+			{/* Limitations */}
+			<section className="w-full max-w-2xl lg:max-w-5xl flex flex-col gap-6">
+				<p className="text-xs uppercase tracking-widest opacity-50">Limitations</p>
+				<div className="grid grid-cols-1 sm:grid-cols-2 gap-8 text-sm leading-relaxed opacity-70">
+					<div className="flex flex-col gap-2">
+						<p className="font-semibold opacity-100">Named instances must exist</p>
+						<p>
+							The <code className="text-xs font-mono">instances</code> path looks up coordinates
+							by name from the font&rsquo;s fvar table. If a name doesn&rsquo;t match exactly,
+							clampFont throws. Use <code className="text-xs font-mono">getInstances()</code> to
+							discover what names the font exposes before building your config.
+						</p>
+					</div>
+					<div className="flex flex-col gap-2">
+						<p className="font-semibold opacity-100">Isolated selections produce static-like output</p>
+						<p>
+							An output built from a single named instance — or from instances that all share the
+							same coordinates — pins every axis and removes it from the design space. The result
+							is a minimal font with no variation, not a variable font. Select at least two
+							instances with differing axis values to keep variation.
+						</p>
+					</div>
+					<div className="flex flex-col gap-2">
+						<p className="font-semibold opacity-100">Cold start latency</p>
+						<p>
+							Pyodide (the Python WASM runtime) takes ~10 s to initialise on first use per
+							process. Subsequent calls are fast. On vfclamp.com the engine is kept warm with
+							a cron ping — cold starts mainly affect self-hosted or edge deployments.
+						</p>
+					</div>
+					<div className="flex flex-col gap-2">
+						<p className="font-semibold opacity-100">CFF2 variable fonts</p>
+						<p>
+							fonttools&rsquo; varLib.instancer has limited support for OTF/CFF2-based variable
+							fonts. TTF (glyf + gvar) is fully supported. Most variable fonts shipping today
+							are TTF-based, but if your font uses CFF2 outlines the instancer may error or
+							produce unexpected results.
+						</p>
+					</div>
+					<div className="flex flex-col gap-2">
+						<p className="font-semibold opacity-100">Output size</p>
+						<p>
+							How much a clamped font shrinks depends on the source. Fonts with many
+							intermediate masters across a wide axis range compress well; fonts with few
+							masters may see little size reduction regardless of the range specified.
+						</p>
+					</div>
+					<div className="flex flex-col gap-2">
+						<p className="font-semibold opacity-100">Single-threaded processing</p>
+						<p>
+							Pyodide runs on a single thread. Multiple concurrent <code className="text-xs font-mono">clampFont()</code> calls
+							queue behind each other. For batch workloads, process fonts sequentially or
+							spread calls across multiple Node.js processes.
+						</p>
+					</div>
+				</div>
 			</section>
 
 			<SiteFooter current="vfClamp" npmVersion={version} siteVersion={siteVersion} />
