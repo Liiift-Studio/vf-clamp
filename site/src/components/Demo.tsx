@@ -659,7 +659,7 @@ export default function Demo() {
 									{group.label}
 									{group.hasNamePrefix && (
 										<span className="opacity-50 normal-case tracking-normal ml-1.5">
-											({group.axisValue})
+											({group.axisTag} {group.axisValue})
 										</span>
 									)}
 								</p>
