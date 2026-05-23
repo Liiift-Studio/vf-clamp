@@ -47,6 +47,61 @@ const FORMAT_EXT: Record<OutputFormat, string> = {
 	woff2: 'woff2',
 }
 
+const NAME_ID_LABELS: Record<number, string> = {
+	1:  'Family',
+	2:  'Subfamily',
+	4:  'Full name',
+	6:  'PostScript',
+	16: 'Pref. family',
+	17: 'Pref. subfamily',
+}
+
+/** Parse OpenType name table from a TTF/OTF buffer, returning interesting nameIDs. */
+function parseNameTable(buffer: ArrayBuffer): Array<{ nameId: number; label: string; value: string }> {
+	try {
+		const view      = new DataView(buffer)
+		const numTables = view.getUint16(4)
+		let nameOffset  = -1
+		for (let i = 0; i < numTables; i++) {
+			const base = 12 + i * 16
+			const tag  = String.fromCharCode(view.getUint8(base), view.getUint8(base + 1), view.getUint8(base + 2), view.getUint8(base + 3))
+			if (tag === 'name') { nameOffset = view.getUint32(base + 8); break }
+		}
+		if (nameOffset < 0) return []
+
+		const count        = view.getUint16(nameOffset + 2)
+		const stringOffset = view.getUint16(nameOffset + 4)
+		const INTERESTING  = new Set([1, 2, 4, 6, 16, 17])
+		const byId         = new Map<number, { platformId: number; value: string }>()
+
+		for (let i = 0; i < count; i++) {
+			const rec        = nameOffset + 6 + i * 12
+			const platformId = view.getUint16(rec)
+			const nameId     = view.getUint16(rec + 6)
+			const length     = view.getUint16(rec + 8)
+			const strOff     = view.getUint16(rec + 10)
+			if (!INTERESTING.has(nameId)) continue
+			const existing = byId.get(nameId)
+			if (existing && existing.platformId === 3) continue // already have Windows/Unicode entry
+
+			const strStart = nameOffset + stringOffset + strOff
+			let value = ''
+			if (platformId === 3) {
+				for (let j = 0; j < length; j += 2) value += String.fromCharCode(view.getUint16(strStart + j))
+			} else {
+				for (let j = 0; j < length; j++) value += String.fromCharCode(view.getUint8(strStart + j))
+			}
+			byId.set(nameId, { platformId, value })
+		}
+
+		return Array.from(byId.entries())
+			.sort((a, b) => a[0] - b[0])
+			.map(([nameId, { value }]) => ({ nameId, label: NAME_ID_LABELS[nameId] ?? `ID ${nameId}`, value }))
+	} catch {
+		return []
+	}
+}
+
 /** Generate a vf-clamp npm code snippet from the current groups. */
 function generateCode(groups: InstanceGroup[], fontName: string, format: OutputFormat): string {
 	if (!groups.length) return ''
@@ -57,7 +112,7 @@ function generateCode(groups: InstanceGroup[], fontName: string, format: OutputF
 	const outputLines = groups.flatMap((group) => {
 		const first = group.instances[0]
 		const last  = group.instances[group.instances.length - 1]
-		const name  = group.instances.length === 1 ? first.name : `${first.name}–${last.name}`
+		const name  = group.instances.length === 1 ? first.name : compactName(first.name, last.name)
 		const instanceList = group.instances.map((i) => `        '${i.name}',`).join('\n')
 		return [
 			`    {`,
@@ -85,7 +140,7 @@ function generateCode(groups: InstanceGroup[], fontName: string, format: OutputF
 		`})`,
 		``,
 		`for (const result of results) {`,
-		`  await writeFile(\`${safe}-\${result.name}-VF.${ext}\`, result.buffer)`,
+		`  await writeFile(\`\${result.name} VF.${ext}\`, result.buffer)`,
 		`}`,
 	].join('\n')
 }
@@ -100,6 +155,31 @@ function longestCommonPrefix(strings: string[]): string {
 		while (prefix && !s.startsWith(prefix)) prefix = prefix.slice(0, -1)
 	}
 	return prefix
+}
+
+/**
+ * Compact two endpoint instance names into a shared-prefix form.
+ * "Encode Sans Light" + "Encode Sans Bold" → "Encode Sans Light-Bold"
+ * Falls back to "First–Last" if there is no shared word-level prefix.
+ */
+function compactName(first: string, last: string): string {
+	if (first === last) return first
+	let prefix = ''
+	const minLen = Math.min(first.length, last.length)
+	for (let i = 0; i < minLen; i++) {
+		if (first[i] === last[i]) prefix += first[i]
+		else break
+	}
+	const lastSpace = prefix.lastIndexOf(' ')
+	prefix = lastSpace >= 0 ? prefix.slice(0, lastSpace + 1) : ''
+	if (!prefix) return `${first}–${last}`
+	const a = first.slice(prefix.length).trim()
+	const b = last.slice(prefix.length).trim()
+	const base = prefix.trim()
+	if (!a && !b) return base
+	if (!a) return `${base} ${b}`
+	if (!b) return `${base} ${a}`
+	return `${base} ${a}-${b}`
 }
 
 /**
@@ -299,7 +379,9 @@ function TextPreview({
 	axes: AxisDefinition[]
 	axisRanges: Record<string, { min: number; max: number }>
 }) {
-	const [progress, setProgress] = useState(0)
+	const [progress, setProgress]     = useState(0)
+	const [editing, setEditing]       = useState(false)
+	const [customText, setCustomText] = useState('')
 	const rafRef   = useRef<number>(0)
 	const startRef = useRef<number | null>(null)
 	const DURATION = 2800
@@ -329,14 +411,46 @@ function TextPreview({
 			.join(', ')
 	}, [axes, axisRanges, progress])
 
+	const midpointSettings = useMemo(() => {
+		return axes
+			.map((axis) => {
+				const r = axisRanges[axis.tag]
+				if (!r) return null
+				return `'${axis.tag}' ${((r.min + r.max) / 2).toFixed(1)}`
+			})
+			.filter(Boolean)
+			.join(', ')
+	}, [axes, axisRanges])
+
 	return (
-		<p
-			style={{ fontFamily: '"vf-demo", sans-serif', fontVariationSettings: variationSettings }}
-			className="text-4xl leading-tight opacity-90 select-none overflow-hidden"
-			aria-hidden="true"
-		>
-			Aa Bb 012
-		</p>
+		<div className="relative group/preview">
+			{editing ? (
+				<textarea
+					// eslint-disable-next-line jsx-a11y/no-autofocus
+					autoFocus
+					value={customText}
+					onChange={(e) => setCustomText(e.target.value)}
+					placeholder="Type here…"
+					rows={2}
+					style={{ fontFamily: '"vf-demo", sans-serif', fontVariationSettings: midpointSettings, resize: 'none' }}
+					className="w-full bg-transparent text-4xl leading-tight opacity-90 placeholder:opacity-20 focus:outline-none"
+				/>
+			) : (
+				<p
+					style={{ fontFamily: '"vf-demo", sans-serif', fontVariationSettings: variationSettings }}
+					className="text-4xl leading-tight opacity-90 select-none overflow-hidden"
+					aria-hidden="true"
+				>
+					{customText || 'Aa Bb 012'}
+				</p>
+			)}
+			<button
+				onClick={() => setEditing((v) => !v)}
+				className="absolute top-0 right-0 text-[10px] opacity-0 group-hover/preview:opacity-30 hover:!opacity-60 transition-opacity"
+			>
+				{editing ? 'done' : 'edit'}
+			</button>
+		</div>
 	)
 }
 
@@ -365,6 +479,8 @@ export default function Demo() {
 	const [showAdvanced, setShowAdvanced]       = useState(false)
 	const [axisOverrides, setAxisOverrides]     = useState<Record<string, { min: number; max: number }>>({})
 	const [outputFormat, setOutputFormat]       = useState<OutputFormat>('ttf')
+	const [nameTables, setNameTables]           = useState<Record<number, Array<{ nameId: number; label: string; value: string }>>>({})
+	const [expandedNameTable, setExpandedNameTable] = useState<number | null>(null)
 
 	const isLoadingRef       = useRef(false)
 	const containerRef       = useRef<HTMLDivElement>(null)
@@ -461,6 +577,8 @@ export default function Demo() {
 		setSelected(new Set())
 		setAxisOverrides({})
 		setShowAdvanced(false)
+		setNameTables({})
+		setExpandedNameTable(null)
 		setFontBuffer(buffer)
 		setFontName(name)
 
@@ -526,6 +644,8 @@ export default function Demo() {
 			else next.add(name)
 			return next
 		})
+		setNameTables({})
+		setExpandedNameTable(null)
 	}
 
 	async function handleDownload() {
@@ -550,7 +670,7 @@ export default function Demo() {
 			const outputs = groups.map((group) => {
 				const first = group.instances[0]
 				const last  = group.instances[group.instances.length - 1]
-				const name  = group.instances.length === 1 ? first.name : `${first.name}–${last.name}`
+				const name  = group.instances.length === 1 ? first.name : compactName(first.name, last.name)
 				return { name, instances: group.instances.map((i) => i.name) }
 			})
 
@@ -565,17 +685,24 @@ export default function Demo() {
 			setProcessingProgress(100)
 			setProcessingStage(3)
 
-			for (const result of json.results) {
-				const fmt  = (result.format ?? outputFormat) as OutputFormat
+			const parsedTables: Record<number, Array<{ nameId: number; label: string; value: string }>> = {}
+			;(json.results as Array<{ name: string; data: string; format?: string }>).forEach((result, idx) => {
+				const fmt   = (result.format ?? outputFormat) as OutputFormat
 				const bytes = Uint8Array.from(atob(result.data), (c) => c.charCodeAt(0))
-				const blob  = new Blob([bytes], { type: FORMAT_MIME[fmt] })
-				const url   = URL.createObjectURL(blob)
-				const a     = document.createElement('a')
+
+				const blob = new Blob([bytes], { type: FORMAT_MIME[fmt] })
+				const url  = URL.createObjectURL(blob)
+				const a    = document.createElement('a')
 				a.href = url
-				a.download = `${result.name}-VF.${FORMAT_EXT[fmt]}`
+				a.download = `${result.name} VF.${FORMAT_EXT[fmt]}`
 				a.click()
 				URL.revokeObjectURL(url)
-			}
+
+				if (fmt === 'ttf' || fmt === 'otf') {
+					parsedTables[idx] = parseNameTable(bytes.buffer)
+				}
+			})
+			setNameTables(parsedTables)
 		} catch (err) {
 			setProcessError(err instanceof Error ? err.message : 'Processing failed')
 		} finally {
@@ -797,12 +924,15 @@ export default function Demo() {
 					</p>
 
 					{groups.map((group, i) => {
-						const first = group.instances[0]
-						const last  = group.instances[group.instances.length - 1]
-						const label = group.instances.length === 1
+						const first      = group.instances[0]
+						const last       = group.instances[group.instances.length - 1]
+						const label      = group.instances.length === 1
 							? first.name
 							: `${first.name} → ${last.name}`
+						const name       = group.instances.length === 1 ? first.name : compactName(first.name, last.name)
+						const filename   = `${name} VF.${FORMAT_EXT[outputFormat]}`
 						const isIsolated = group.instances.length === 1
+						const nameTable  = nameTables[i]
 
 						return (
 							<div
@@ -828,6 +958,7 @@ export default function Demo() {
 											<span className="font-mono">{group.collateral.join(', ')}</span>
 										</p>
 									)}
+									<p className="text-[10px] font-mono opacity-25">{filename}</p>
 								</div>
 
 								{/* Text preview */}
@@ -850,30 +981,40 @@ export default function Demo() {
 								<p className="text-[10px] font-mono opacity-20">
 									{group.instances.map((inst) => inst.name).join(' · ')}
 								</p>
+
+								{/* Name table — available after download */}
+								{nameTable && nameTable.length > 0 && (
+									<div className="flex flex-col gap-2">
+										<button
+											onClick={() => setExpandedNameTable(expandedNameTable === i ? null : i)}
+											className="self-start flex items-center gap-1 text-[10px] opacity-30 hover:opacity-60 transition-opacity"
+										>
+											<span>{expandedNameTable === i ? '▾' : '▸'}</span>
+											<span>Name table</span>
+										</button>
+										{expandedNameTable === i && (
+											<table className="w-full text-[10px] font-mono">
+												<tbody>
+													{nameTable.map(({ nameId, label: nameLabel, value }) => (
+														<tr key={nameId} className="border-t border-white/5">
+															<td className="py-1 pr-4 opacity-30 shrink-0 whitespace-nowrap">{nameLabel}</td>
+															<td className="py-1 opacity-60 break-all">{value}</td>
+														</tr>
+													))}
+												</tbody>
+											</table>
+										)}
+									</div>
+								)}
 							</div>
 						)
 					})}
 				</div>
 			)}
 
-			{/* Code + Download */}
+			{/* Download + Code */}
 			{groups.length > 0 && (
 				<div className="flex flex-col gap-4">
-
-					{/* See code toggle */}
-					<div className="flex flex-col gap-3">
-						<button
-							onClick={() => setShowCode((v) => !v)}
-							className="self-start text-xs px-3 py-1.5 rounded-full border border-white/15 hover:bg-white/5 transition-colors opacity-60 hover:opacity-100"
-						>
-							{showCode ? 'Hide code' : 'See code'}
-						</button>
-						{showCode && (
-							<pre className="bg-white/5 rounded-xl p-4 overflow-x-auto text-xs leading-relaxed font-mono opacity-75 whitespace-pre">
-								<code>{generateCode(groups, fontName, outputFormat)}</code>
-							</pre>
-						)}
-					</div>
 
 					{/* Download */}
 					<div className="flex flex-col gap-3">
@@ -910,6 +1051,20 @@ export default function Demo() {
 								</div>
 							)}
 						</div>
+						{!processing && (
+							<div className="flex flex-col gap-0.5">
+								{groups.map((group, i) => {
+									const first = group.instances[0]
+									const last  = group.instances[group.instances.length - 1]
+									const name  = group.instances.length === 1 ? first.name : compactName(first.name, last.name)
+									return (
+										<p key={i} className="text-[10px] font-mono opacity-20">
+											{name} VF.{FORMAT_EXT[outputFormat]}
+										</p>
+									)
+								})}
+							</div>
+						)}
 						{processing && (
 							<div className="flex flex-col gap-1.5">
 								<div className="h-0.5 bg-white/10 rounded-full overflow-hidden w-full max-w-xs">
@@ -922,6 +1077,21 @@ export default function Demo() {
 									First run includes fonttools engine startup (~10 s)
 								</p>
 							</div>
+						)}
+					</div>
+
+					{/* See code toggle */}
+					<div className="flex flex-col gap-3">
+						<button
+							onClick={() => setShowCode((v) => !v)}
+							className="self-start text-xs px-3 py-1.5 rounded-full border border-white/15 hover:bg-white/5 transition-colors opacity-60 hover:opacity-100"
+						>
+							{showCode ? 'Hide code' : 'See code'}
+						</button>
+						{showCode && (
+							<pre className="bg-white/5 rounded-xl p-4 overflow-x-auto text-xs leading-relaxed font-mono opacity-75 whitespace-pre">
+								<code>{generateCode(groups, fontName, outputFormat)}</code>
+							</pre>
 						)}
 					</div>
 				</div>

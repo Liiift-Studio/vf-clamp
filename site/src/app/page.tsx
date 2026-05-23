@@ -34,7 +34,7 @@ export default function Home() {
 					<span>TypeScript</span><span>·</span>
 					<span>fonttools varLib.instancer</span><span>·</span>
 					<span>Pyodide WASM</span><span>·</span>
-					<span>TTF + WOFF2 output</span>
+					<span>TTF · OTF · WOFF · WOFF2</span>
 				</div>
 				<p className="text-base opacity-60 leading-relaxed max-w-lg">
 					vf-clamp wraps fonttools&rsquo; varLib.instancer in a zero-install WASM runtime.
