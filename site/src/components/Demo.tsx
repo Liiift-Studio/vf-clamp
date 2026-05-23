@@ -16,6 +16,13 @@ interface InstanceGroup {
 
 type LoadState = 'idle' | 'loading' | 'ready' | 'error'
 
+const STAGE_LABELS = [
+	'Sending font to server…',
+	'Starting fonttools engine…',
+	'Restricting axis ranges…',
+	'Packaging output files…',
+] as const
+
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 function toBase64(buf: Uint8Array<ArrayBuffer>): string {
@@ -227,17 +234,20 @@ export default function Demo() {
 	const [loadState, setLoadState]   = useState<LoadState>('idle')
 	const [loadError, setLoadError]   = useState<string | null>(null)
 
-	const [selected, setSelected]         = useState<Set<string>>(new Set())
-	const [processing, setProcessing]     = useState(false)
-	const [processError, setProcessError] = useState<string | null>(null)
-	const [tooltip, setTooltip]           = useState<string | null>(null)
-	const [hasDemoFont, setHasDemoFont]   = useState(false)
-	const [showCode, setShowCode]         = useState(false)
+	const [selected, setSelected]               = useState<Set<string>>(new Set())
+	const [processing, setProcessing]           = useState(false)
+	const [processingStage, setProcessingStage] = useState(0)
+	const [processingProgress, setProcessingProgress] = useState(0)
+	const [processError, setProcessError]       = useState<string | null>(null)
+	const [tooltip, setTooltip]                 = useState<string | null>(null)
+	const [hasDemoFont, setHasDemoFont]         = useState(false)
+	const [showCode, setShowCode]               = useState(false)
 
-	const isLoadingRef = useRef(false)
-	const containerRef = useRef<HTMLDivElement>(null)
-	const warmedUpRef  = useRef(false)
-	const styleRef     = useRef<HTMLStyleElement | null>(null)
+	const isLoadingRef       = useRef(false)
+	const containerRef       = useRef<HTMLDivElement>(null)
+	const warmedUpRef        = useRef(false)
+	const styleRef           = useRef<HTMLStyleElement | null>(null)
+	const progressIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
 	// Warmup ping on scroll-into-view
 	useEffect(() => {
@@ -375,6 +385,19 @@ export default function Demo() {
 		if (!fontBuffer || !groups.length) return
 		setProcessing(true)
 		setProcessError(null)
+		setProcessingStage(0)
+		setProcessingProgress(0)
+
+		// Simulated staged progress: grows quickly then slows asymptotically toward 92%
+		let elapsed = 0
+		const TICK_MS = 250
+		progressIntervalRef.current = setInterval(() => {
+			elapsed += TICK_MS
+			if      (elapsed >= 22000) setProcessingStage(3)
+			else if (elapsed >= 7000)  setProcessingStage(2)
+			else if (elapsed >= 1500)  setProcessingStage(1)
+			setProcessingProgress(92 * (1 - Math.exp(-elapsed / 12000)))
+		}, TICK_MS)
 
 		try {
 			const configs = groups.map((group) => {
@@ -395,6 +418,9 @@ export default function Demo() {
 			const json = await res.json()
 			if (!res.ok) throw new Error(json.error ?? `HTTP ${res.status}`)
 
+			setProcessingProgress(100)
+			setProcessingStage(3)
+
 			for (const result of json.results) {
 				const bytes = Uint8Array.from(atob(result.data), (c) => c.charCodeAt(0))
 				const blob  = new Blob([bytes], { type: 'font/ttf' })
@@ -408,7 +434,13 @@ export default function Demo() {
 		} catch (err) {
 			setProcessError(err instanceof Error ? err.message : 'Processing failed')
 		} finally {
+			if (progressIntervalRef.current) {
+				clearInterval(progressIntervalRef.current)
+				progressIntervalRef.current = null
+			}
 			setProcessing(false)
+			setProcessingProgress(0)
+			setProcessingStage(0)
 		}
 	}
 
@@ -616,26 +648,32 @@ export default function Demo() {
 					</div>
 
 					{/* Download */}
-					<div className="flex flex-col gap-2">
+					<div className="flex flex-col gap-3">
 						{processError && (
 							<p className="text-xs text-red-400">{processError}</p>
 						)}
-						<div className="flex items-center gap-4 flex-wrap">
-							<button
-								onClick={handleDownload}
-								disabled={processing}
-								className="text-sm px-5 py-2.5 rounded-full border border-white/20 hover:bg-white/5 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-							>
-								{processing
-									? 'Processing… (may take up to 30 s)'
-									: `Download ${groups.length === 1 ? '1 restricted VF' : `${groups.length} restricted VFs`}`}
-							</button>
-							{processing && (
-								<p className="text-xs opacity-35">
-									fonttools is running on the server — first run includes engine startup
+						<button
+							onClick={handleDownload}
+							disabled={processing}
+							className="self-start text-sm px-5 py-2.5 rounded-full border border-white/20 hover:bg-white/5 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+						>
+							{processing
+								? STAGE_LABELS[processingStage]
+								: `Download ${groups.length === 1 ? '1 restricted VF' : `${groups.length} restricted VFs`}`}
+						</button>
+						{processing && (
+							<div className="flex flex-col gap-1.5">
+								<div className="h-0.5 bg-white/10 rounded-full overflow-hidden w-full max-w-xs">
+									<div
+										className="h-full bg-white/50 rounded-full transition-all duration-500 ease-out"
+										style={{ width: `${processingProgress}%` }}
+									/>
+								</div>
+								<p className="text-[10px] opacity-25">
+									First run includes fonttools engine startup (~10 s)
 								</p>
-							)}
-						</div>
+							</div>
+						)}
 					</div>
 				</div>
 			)}
