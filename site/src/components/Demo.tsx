@@ -1,286 +1,180 @@
 'use client'
-// Demo.tsx — interactive vf-clamp demo: load a font, configure axis clamps,
-// get live validation + code, optionally download the restricted font.
+// Demo.tsx — instance-based vf-clamp demo: select named instances, preview restricted VF groups, download.
 
-import { useState, useCallback, useRef, useEffect } from 'react'
+import { useState, useCallback, useRef, useEffect, useMemo } from 'react'
 import type { AxisDefinition, FontInstance } from 'vf-clamp'
 
-// ── Types ────────────────────────────────────────────────────────────────────
+// ── Types ─────────────────────────────────────────────────────────────────────
 
-type AxisMode = 'full' | 'pin' | 'range'
-
-interface AxisConfig {
-	mode: AxisMode
-	pin: number
-	rangeMin: number
-	rangeMax: number
+/** A group of adjacent selected instances that produces one VF output file. */
+interface InstanceGroup {
+	instances: FontInstance[]
+	axisRanges: Record<string, { min: number; max: number }>
+	/** Unselected instances whose coordinates fall inside this group's axis hull. */
+	collateral: string[]
 }
 
-interface SubfamilyState {
-	id: string
-	name: string
-	axisConfigs: Record<string, AxisConfig>
-}
+type LoadState = 'idle' | 'loading' | 'ready' | 'error'
 
-// ── Helpers ──────────────────────────────────────────────────────────────────
+// ── Helpers ───────────────────────────────────────────────────────────────────
 
-function defaultConfig(axis: AxisDefinition): AxisConfig {
-	return { mode: 'full', pin: axis.default, rangeMin: axis.minimum, rangeMax: axis.maximum }
-}
-
-function newSubfamily(axes: AxisDefinition[], name = 'Variant'): SubfamilyState {
-	const axisConfigs: Record<string, AxisConfig> = {}
-	for (const a of axes) axisConfigs[a.tag] = defaultConfig(a)
-	return { id: crypto.randomUUID(), name, axisConfigs }
-}
-
-function subfamilyFromInstance(inst: FontInstance, axes: AxisDefinition[]): SubfamilyState {
-	const axisConfigs: Record<string, AxisConfig> = {}
-	for (const a of axes) {
-		const coord = inst.coordinates[a.tag]
-		axisConfigs[a.tag] = {
-			mode: coord !== undefined ? 'pin' : 'full',
-			pin: coord ?? a.default,
-			rangeMin: a.minimum,
-			rangeMax: a.maximum,
-		}
-	}
-	return { id: crypto.randomUUID(), name: inst.name, axisConfigs }
-}
-
-// Encode Uint8Array → base64 without exceeding call-stack limits on large fonts
 function toBase64(buf: Uint8Array<ArrayBuffer>): string {
 	let binary = ''
 	const chunk = 0x8000
-	for (let i = 0; i < buf.length; i += chunk) {
+	for (let i = 0; i < buf.length; i += chunk)
 		binary += String.fromCharCode(...buf.subarray(i, i + chunk))
-	}
 	return btoa(binary)
 }
 
-// ── Validation ───────────────────────────────────────────────────────────────
-
-interface AxisIssue {
-	type: 'error' | 'warning'
-	message: string
+/** The axis with the widest normalised range — used as the primary sort key. */
+function primaryAxis(axes: AxisDefinition[]): AxisDefinition | null {
+	if (!axes.length) return null
+	return axes.reduce((best, a) =>
+		a.maximum - a.minimum > best.maximum - best.minimum ? a : best,
+	)
 }
 
-function validateAxis(cfg: AxisConfig, axis: AxisDefinition): AxisIssue | null {
-	if (cfg.mode === 'pin') {
-		if (cfg.pin < axis.minimum || cfg.pin > axis.maximum) {
-			return { type: 'error', message: `${cfg.pin} is outside the axis range [${axis.minimum}–${axis.maximum}]` }
-		}
-	}
-	if (cfg.mode === 'range') {
-		if (cfg.rangeMin >= cfg.rangeMax) {
-			return { type: 'error', message: 'Min must be less than max' }
-		}
-		if (cfg.rangeMin < axis.minimum || cfg.rangeMax > axis.maximum) {
-			return { type: 'warning', message: `Range exceeds axis bounds — fonttools will clip to [${axis.minimum}–${axis.maximum}]` }
-		}
-	}
-	return null
-}
+/**
+ * Group selected instances into contiguous runs along the primary axis.
+ * Two selected instances belong to the same run only when no unselected
+ * instance sits between them in primary-axis sort order.
+ */
+function computeGroups(
+	instances: FontInstance[],
+	selected: Set<string>,
+	axes: AxisDefinition[],
+): InstanceGroup[] {
+	if (!selected.size || !axes.length) return []
 
-function demoHasErrors(subfamilies: SubfamilyState[], axes: AxisDefinition[]): boolean {
-	for (const sub of subfamilies) {
+	const primary = primaryAxis(axes)
+	if (!primary) return []
+
+	const sorted = [...instances].sort(
+		(a, b) =>
+			(a.coordinates[primary.tag] ?? primary.default) -
+			(b.coordinates[primary.tag] ?? primary.default),
+	)
+
+	// Build runs of consecutive selected instances
+	const runs: FontInstance[][] = []
+	let current: FontInstance[] = []
+	for (const inst of sorted) {
+		if (selected.has(inst.name)) {
+			current.push(inst)
+		} else if (current.length) {
+			runs.push(current)
+			current = []
+		}
+	}
+	if (current.length) runs.push(current)
+
+	// Per run: compute hull and find collateral (unselected instances inside hull)
+	return runs.map((run) => {
+		const axisRanges: Record<string, { min: number; max: number }> = {}
 		for (const axis of axes) {
-			const cfg = sub.axisConfigs[axis.tag]
-			if (cfg && validateAxis(cfg, axis)?.type === 'error') return true
+			const vals = run.map((i) => i.coordinates[axis.tag] ?? axis.default)
+			axisRanges[axis.tag] = { min: Math.min(...vals), max: Math.max(...vals) }
 		}
-	}
-	return false
-}
 
-// ── Code generation ──────────────────────────────────────────────────────────
+		const collateral = instances
+			.filter((inst) => {
+				if (selected.has(inst.name)) return false
+				return axes.every((axis) => {
+					const v = inst.coordinates[axis.tag] ?? axis.default
+					const r = axisRanges[axis.tag]
+					return v >= r.min && v <= r.max
+				})
+			})
+			.map((i) => i.name)
 
-function generateCode(subfamilies: SubfamilyState[], axes: AxisDefinition[]): string {
-	if (!subfamilies.length) {
-		return `import { clampFont } from 'vf-clamp'\n\n// Add a variant below to generate code`
-	}
-
-	const subLines = subfamilies.flatMap((sub) => {
-		const entries: string[] = []
-		for (const axis of axes) {
-			const cfg = sub.axisConfigs[axis.tag]
-			if (!cfg || cfg.mode === 'full') continue
-			if (cfg.mode === 'pin') {
-				entries.push(`        ${axis.tag}: ${cfg.pin},`)
-			} else {
-				entries.push(`        ${axis.tag}: { min: ${cfg.rangeMin}, max: ${cfg.rangeMax} },`)
-			}
-		}
-		if (!entries.length) {
-			return [`    { name: '${sub.name}', axes: {} },`]
-		}
-		return [
-			`    {`,
-			`      name: '${sub.name}',`,
-			`      axes: {`,
-			...entries,
-			`      },`,
-			`    },`,
-		]
+		return { instances: run, axisRanges, collateral }
 	})
-
-	return [
-		`import { clampFont } from 'vf-clamp'`,
-		`import { readFile, writeFile } from 'fs/promises'`,
-		``,
-		`const source = await readFile('MyFont-VF.ttf')`,
-		``,
-		`const results = await clampFont(source, {`,
-		`  subfamilies: [`,
-		...subLines,
-		`  ],`,
-		`})`,
-		``,
-		`for (const result of results) {`,
-		`  await writeFile(\`MyFont-\${result.name}-VF.ttf\`, result.buffer)`,
-		`}`,
-	].join('\n')
 }
 
-// ── Sub-components ───────────────────────────────────────────────────────────
+// ── Sub-components ────────────────────────────────────────────────────────────
 
-function ModeToggle({ mode, onChange }: { mode: AxisMode; onChange: (m: AxisMode) => void }) {
+/** Horizontal bar showing where a restricted range sits on the full axis span. */
+function AxisRangeBar({
+	axis,
+	range,
+}: {
+	axis: AxisDefinition
+	range: { min: number; max: number }
+}) {
+	const full = axis.maximum - axis.minimum || 1
+	const leftPct  = ((range.min - axis.minimum) / full) * 100
+	const widthPct = ((range.max - range.min) / full) * 100
+
 	return (
-		<div className="flex rounded-md overflow-hidden border border-white/10 text-xs shrink-0">
-			{(['full', 'pin', 'range'] as AxisMode[]).map((m) => (
-				<button
-					key={m}
-					onClick={() => onChange(m)}
-					className={`px-2.5 py-1 capitalize transition-colors ${
-						mode === m ? 'bg-white/15 text-white' : 'text-white/35 hover:text-white/60'
-					}`}
-				>
-					{m}
-				</button>
-			))}
+		<div className="flex items-center gap-3 text-xs">
+			<span className="font-mono opacity-40 w-10 shrink-0">{axis.tag}</span>
+			<div className="flex-1 h-1.5 bg-white/10 rounded-full relative">
+				<div
+					className="absolute h-full bg-white/60 rounded-full"
+					style={{ left: `${leftPct}%`, width: `${Math.max(widthPct, 0.5)}%` }}
+				/>
+			</div>
+			<span className="font-mono opacity-40 tabular-nums w-24 text-right shrink-0">
+				{range.min === range.max ? range.min : `${range.min}–${range.max}`}
+			</span>
 		</div>
 	)
 }
 
-function AxisRow({
-	axis,
-	config,
-	onChange,
+/** Text specimen that animates through the axis range using CSS font-variation-settings. */
+function TextPreview({
+	axes,
+	axisRanges,
 }: {
-	axis: AxisDefinition
-	config: AxisConfig
-	onChange: (cfg: AxisConfig) => void
+	axes: AxisDefinition[]
+	axisRanges: Record<string, { min: number; max: number }>
 }) {
-	const issue = validateAxis(config, axis)
-	const step = axis.maximum - axis.minimum > 100 ? 1 : axis.maximum - axis.minimum > 10 ? 0.5 : 0.1
+	const [progress, setProgress] = useState(0)
+	const rafRef   = useRef<number>(0)
+	const startRef = useRef<number | null>(null)
+	const DURATION = 2800
+
+	useEffect(() => {
+		startRef.current = null
+		function tick(now: number) {
+			if (!startRef.current) startRef.current = now
+			const t = ((now - startRef.current) % (DURATION * 2)) / DURATION
+			setProgress(t <= 1 ? t : 2 - t) // ping-pong 0 → 1 → 0
+			rafRef.current = requestAnimationFrame(tick)
+		}
+		rafRef.current = requestAnimationFrame(tick)
+		return () => cancelAnimationFrame(rafRef.current)
+	}, [axisRanges])
+
+	const variationSettings = useMemo(() => {
+		return axes
+			.map((axis) => {
+				const r = axisRanges[axis.tag]
+				if (!r) return null
+				const eased = progress < 0.5 ? 2 * progress * progress : -1 + (4 - 2 * progress) * progress
+				const v = r.min + (r.max - r.min) * eased
+				return `'${axis.tag}' ${v.toFixed(1)}`
+			})
+			.filter(Boolean)
+			.join(', ')
+	}, [axes, axisRanges, progress])
 
 	return (
-		<div className="flex flex-col gap-2 py-3 border-t border-white/5">
-			<div className="flex items-center gap-3 flex-wrap">
-				<span className="text-sm flex-1 min-w-0 leading-tight">
-					<span className="opacity-80">{axis.name}</span>
-					<span className="ml-2 text-xs font-mono opacity-30">{axis.tag}</span>
-					<span className="ml-2 text-xs opacity-20 tabular-nums">
-						{axis.minimum}–{axis.maximum}
-					</span>
-				</span>
-				<ModeToggle mode={config.mode} onChange={(m) => onChange({ ...config, mode: m })} />
-			</div>
-
-			{config.mode === 'pin' && (
-				<div className="flex items-center gap-3">
-					<input
-						type="range"
-						min={axis.minimum}
-						max={axis.maximum}
-						step={step}
-						value={config.pin}
-						onChange={(e) => onChange({ ...config, pin: Number(e.target.value) })}
-						className="flex-1"
-						style={{ touchAction: 'none' }}
-						aria-label={`${axis.name} pin value`}
-					/>
-					<input
-						type="number"
-						min={axis.minimum}
-						max={axis.maximum}
-						step={step}
-						value={config.pin}
-						onChange={(e) => onChange({ ...config, pin: Number(e.target.value) })}
-						className="w-16 bg-white/5 border border-white/10 rounded px-2 py-1 text-xs font-mono text-right"
-						aria-label={`${axis.name} pin value (number)`}
-					/>
-				</div>
-			)}
-
-			{config.mode === 'range' && (
-				<div className="flex flex-col gap-2">
-					<div className="flex items-center gap-3">
-						<span className="text-xs opacity-35 w-7 shrink-0 tabular-nums">min</span>
-						<input
-							type="range"
-							min={axis.minimum}
-							max={axis.maximum}
-							step={step}
-							value={config.rangeMin}
-							onChange={(e) => onChange({ ...config, rangeMin: Number(e.target.value) })}
-							className="flex-1"
-							style={{ touchAction: 'none' }}
-							aria-label={`${axis.name} range minimum`}
-						/>
-						<input
-							type="number"
-							min={axis.minimum}
-							max={axis.maximum}
-							step={step}
-							value={config.rangeMin}
-							onChange={(e) => onChange({ ...config, rangeMin: Number(e.target.value) })}
-							className="w-16 bg-white/5 border border-white/10 rounded px-2 py-1 text-xs font-mono text-right"
-							aria-label={`${axis.name} range minimum (number)`}
-						/>
-					</div>
-					<div className="flex items-center gap-3">
-						<span className="text-xs opacity-35 w-7 shrink-0 tabular-nums">max</span>
-						<input
-							type="range"
-							min={axis.minimum}
-							max={axis.maximum}
-							step={step}
-							value={config.rangeMax}
-							onChange={(e) => onChange({ ...config, rangeMax: Number(e.target.value) })}
-							className="flex-1"
-							style={{ touchAction: 'none' }}
-							aria-label={`${axis.name} range maximum`}
-						/>
-						<input
-							type="number"
-							min={axis.minimum}
-							max={axis.maximum}
-							step={step}
-							value={config.rangeMax}
-							onChange={(e) => onChange({ ...config, rangeMax: Number(e.target.value) })}
-							className="w-16 bg-white/5 border border-white/10 rounded px-2 py-1 text-xs font-mono text-right"
-							aria-label={`${axis.name} range maximum (number)`}
-						/>
-					</div>
-				</div>
-			)}
-
-			{issue && (
-				<p className={`text-xs ${issue.type === 'error' ? 'text-red-400' : 'text-amber-400/80'}`}>
-					{issue.type === 'error' ? '✕' : '⚠'} {issue.message}
-				</p>
-			)}
-		</div>
+		<p
+			style={{ fontFamily: '"vf-demo", sans-serif', fontVariationSettings: variationSettings }}
+			className="text-4xl leading-tight opacity-90 select-none overflow-hidden"
+			aria-hidden="true"
+		>
+			Aa Bb 012
+		</p>
 	)
 }
 
 // ── Main component ────────────────────────────────────────────────────────────
 
-const DEFAULT_FONT_URL = '/fonts/Inter-Variable.ttf'
+const DEFAULT_FONT_URL  = '/fonts/Inter-Variable.ttf'
 const DEFAULT_FONT_NAME = 'Inter Variable'
 const ACCEPT = '.ttf,.otf,.woff,.woff2'
-
-type LoadState = 'idle' | 'loading' | 'ready' | 'error'
 
 export default function Demo() {
 	const [fontBuffer, setFontBuffer] = useState<Uint8Array<ArrayBuffer> | null>(null)
@@ -290,17 +184,18 @@ export default function Demo() {
 	const [loadState, setLoadState]   = useState<LoadState>('idle')
 	const [loadError, setLoadError]   = useState<string | null>(null)
 
-	const [subfamilies, setSubfamilies] = useState<SubfamilyState[]>([])
-
-	const [processing, setProcessing]   = useState(false)
+	const [selected, setSelected]         = useState<Set<string>>(new Set())
+	const [processing, setProcessing]     = useState(false)
 	const [processError, setProcessError] = useState<string | null>(null)
+	const [tooltip, setTooltip]           = useState<string | null>(null)
+	const [hasDemoFont, setHasDemoFont]   = useState(false)
 
-	const isLoadingRef  = useRef(false)
-	const containerRef  = useRef<HTMLDivElement>(null)
-	const warmedUpRef   = useRef(false)
+	const isLoadingRef = useRef(false)
+	const containerRef = useRef<HTMLDivElement>(null)
+	const warmedUpRef  = useRef(false)
+	const styleRef     = useRef<HTMLStyleElement | null>(null)
 
-	// Fire a lightweight warmup ping when the demo section scrolls into view.
-	// Covers the cost of one invocation only for users who actually see the demo.
+	// Warmup ping on scroll-into-view
 	useEffect(() => {
 		const el = containerRef.current
 		if (!el) return
@@ -309,20 +204,52 @@ export default function Demo() {
 				if (entries[0].isIntersecting && !warmedUpRef.current) {
 					warmedUpRef.current = true
 					observer.disconnect()
-					// POST a 1-byte body — enough to trigger preparePyodide() on the server
-					// without doing any real work. Fire-and-forget; errors are benign.
 					fetch('/api/demo/instances', {
 						method: 'POST',
 						headers: { 'Content-Type': 'application/octet-stream' },
 						body: new Uint8Array([0]),
-					}).catch(() => { /* warmup failure is non-fatal */ })
+					}).catch(() => {})
 				}
 			},
-			{ threshold: 0.1 }
+			{ threshold: 0.1 },
 		)
 		observer.observe(el)
 		return () => observer.disconnect()
 	}, [])
+
+	// Inject @font-face when font buffer changes so TextPreview can render it
+	useEffect(() => {
+		styleRef.current?.remove()
+		setHasDemoFont(false)
+		if (!fontBuffer) return
+
+		const blob = new Blob([fontBuffer], { type: 'font/ttf' })
+		const url  = URL.createObjectURL(blob)
+
+		const style = document.createElement('style')
+		style.textContent = `@font-face { font-family: "vf-demo"; src: url("${url}"); }`
+		document.head.appendChild(style)
+		styleRef.current = style
+		setHasDemoFont(true)
+
+		return () => {
+			style.remove()
+			URL.revokeObjectURL(url)
+			setHasDemoFont(false)
+		}
+	}, [fontBuffer])
+
+	const groups = useMemo(
+		() => computeGroups(instances, selected, axes),
+		[instances, selected, axes],
+	)
+
+	/** Selected instances that are alone in their group (no adjacent neighbours). */
+	const isolatedInstances = useMemo(() => {
+		const s = new Set<string>()
+		for (const g of groups) if (g.instances.length === 1) s.add(g.instances[0].name)
+		return s
+	}, [groups])
 
 	const loadFont = useCallback(async (buffer: Uint8Array<ArrayBuffer>, name: string) => {
 		if (isLoadingRef.current) return
@@ -332,7 +259,7 @@ export default function Demo() {
 		setLoadError(null)
 		setAxes([])
 		setInstances([])
-		setSubfamilies([])
+		setSelected(new Set())
 		setFontBuffer(buffer)
 		setFontName(name)
 
@@ -362,18 +289,22 @@ export default function Demo() {
 		try {
 			const res = await fetch(DEFAULT_FONT_URL)
 			if (!res.ok) throw new Error(`HTTP ${res.status}`)
-			const buffer = new Uint8Array(await res.arrayBuffer())
-			await loadFont(buffer, DEFAULT_FONT_NAME)
+			await loadFont(new Uint8Array(await res.arrayBuffer()), DEFAULT_FONT_NAME)
 		} catch (err) {
 			setLoadError(err instanceof Error ? err.message : 'Failed to load Inter Variable')
 			setLoadState('error')
 		}
 	}, [loadState, loadFont])
 
-	const handleFile = useCallback(async (file: File) => {
-		const buffer = new Uint8Array(await file.arrayBuffer())
-		await loadFont(buffer, file.name.replace(/\.(ttf|otf|woff2?)$/i, ''))
-	}, [loadFont])
+	const handleFile = useCallback(
+		async (file: File) => {
+			await loadFont(
+				new Uint8Array(await file.arrayBuffer()),
+				file.name.replace(/\.(ttf|otf|woff2?)$/i, ''),
+			)
+		},
+		[loadFont],
+	)
 
 	function handleInputChange(e: React.ChangeEvent<HTMLInputElement>) {
 		const file = e.target.files?.[0]
@@ -387,41 +318,29 @@ export default function Demo() {
 		if (file) handleFile(file)
 	}
 
-	function addSubfamily() {
-		setSubfamilies((prev) => [...prev, newSubfamily(axes, `Variant ${prev.length + 1}`)])
-	}
-
-	function removeSubfamily(id: string) {
-		setSubfamilies((prev) => prev.filter((s) => s.id !== id))
-	}
-
-	function renameSubfamily(id: string, name: string) {
-		setSubfamilies((prev) => prev.map((s) => (s.id === id ? { ...s, name } : s)))
-	}
-
-	function updateAxisConfig(subfamilyId: string, tag: string, cfg: AxisConfig) {
-		setSubfamilies((prev) =>
-			prev.map((s) =>
-				s.id === subfamilyId ? { ...s, axisConfigs: { ...s.axisConfigs, [tag]: cfg } } : s
-			)
-		)
+	function toggleInstance(name: string) {
+		setSelected((prev) => {
+			const next = new Set(prev)
+			if (next.has(name)) next.delete(name)
+			else next.add(name)
+			return next
+		})
 	}
 
 	async function handleDownload() {
-		if (!fontBuffer || !subfamilies.length) return
+		if (!fontBuffer || !groups.length) return
 		setProcessing(true)
 		setProcessError(null)
 
 		try {
-			const configs = subfamilies.map((sub) => {
-				const axes_out: Record<string, number | { min: number; max: number }> = {}
-				for (const axis of axes) {
-					const cfg = sub.axisConfigs[axis.tag]
-					if (!cfg || cfg.mode === 'full') continue
-					if (cfg.mode === 'pin') axes_out[axis.tag] = cfg.pin
-					else axes_out[axis.tag] = { min: cfg.rangeMin, max: cfg.rangeMax }
-				}
-				return { name: sub.name, axes: axes_out }
+			const configs = groups.map((group) => {
+				const first = group.instances[0]
+				const last  = group.instances[group.instances.length - 1]
+				const name  = group.instances.length === 1 ? first.name : `${first.name}–${last.name}`
+				const axesOut: Record<string, number | { min: number; max: number }> = {}
+				for (const [tag, r] of Object.entries(group.axisRanges))
+					axesOut[tag] = r.min === r.max ? r.min : r
+				return { name, axes: axesOut }
 			})
 
 			const res = await fetch('/api/demo/clamp', {
@@ -434,9 +353,9 @@ export default function Demo() {
 
 			for (const result of json.results) {
 				const bytes = Uint8Array.from(atob(result.data), (c) => c.charCodeAt(0))
-				const blob = new Blob([bytes], { type: 'font/ttf' })
-				const url = URL.createObjectURL(blob)
-				const a = document.createElement('a')
+				const blob  = new Blob([bytes], { type: 'font/ttf' })
+				const url   = URL.createObjectURL(blob)
+				const a     = document.createElement('a')
 				a.href = url
 				a.download = `${result.name}-VF.ttf`
 				a.click()
@@ -449,17 +368,8 @@ export default function Demo() {
 		}
 	}
 
-	const code   = generateCode(subfamilies, axes)
-	const errors = demoHasErrors(subfamilies, axes)
-
-	const noRestrictions =
-		subfamilies.length > 0 &&
-		subfamilies.every((sub) =>
-			axes.every((a) => (sub.axisConfigs[a.tag]?.mode ?? 'full') === 'full')
-		)
-
 	return (
-		<div ref={containerRef} className="w-full flex flex-col gap-8">
+		<div ref={containerRef} className="w-full flex flex-col gap-10">
 
 			{/* Upload zone */}
 			<div
@@ -478,7 +388,7 @@ export default function Demo() {
 								>
 									Inter Variable
 								</button>{' '}
-								or drop any variable font to explore its axes
+								or drop any variable font to explore its instances
 							</p>
 							{loadState === 'error' && loadError && (
 								<p className="text-xs text-red-400">{loadError}</p>
@@ -487,7 +397,7 @@ export default function Demo() {
 					)}
 					{loadState === 'loading' && (
 						<div className="flex flex-col gap-1">
-							<p className="text-sm opacity-70 animate-pulse">Reading font axes…</p>
+							<p className="text-sm opacity-70 animate-pulse">Reading font instances…</p>
 							<p className="text-xs opacity-40">
 								First load may take 10–20 s while the font engine warms up
 							</p>
@@ -514,116 +424,149 @@ export default function Demo() {
 				</label>
 			</div>
 
-			{/* Named instances — quick-add chips */}
+			{/* Instance selection grid */}
 			{loadState === 'ready' && instances.length > 0 && (
-				<div className="flex flex-col gap-2">
+				<div className="flex flex-col gap-3">
 					<p className="text-xs opacity-35 uppercase tracking-widest">
-						Named instances — click to add as a variant
+						Select instances — adjacent selections merge into one output file
 					</p>
-					<div className="flex flex-wrap gap-1.5">
-						{instances.map((inst) => (
-							<button
-								key={inst.name}
-								onClick={() =>
-									setSubfamilies((prev) => [...prev, subfamilyFromInstance(inst, axes)])
-								}
-								className="text-xs px-3 py-1 rounded-full border border-white/10 hover:border-white/25 hover:bg-white/5 transition-colors opacity-50 hover:opacity-100"
-							>
-								<span className="font-mono">{inst.name}</span>
-								<span className="ml-2 opacity-40 font-mono">
-									{Object.entries(inst.coordinates)
-										.map(([k, v]) => `${k} ${v}`)
-										.join(' ')}
-								</span>
-							</button>
-						))}
-					</div>
-				</div>
-			)}
+					<div className="flex flex-wrap gap-2">
+						{instances.map((inst) => {
+							const isSelected = selected.has(inst.name)
+							const isIsolated = isSelected && isolatedInstances.has(inst.name)
 
-			{/* Variant cards */}
-			{loadState === 'ready' && (
-				<div className="flex flex-col gap-4">
-					{subfamilies.length === 0 && (
-						<p className="text-sm opacity-30 italic">
-							Add a variant to start configuring axis restrictions
-						</p>
+							return (
+								<div key={inst.name} className="relative">
+									<button
+										onClick={() => toggleInstance(inst.name)}
+										onMouseEnter={() => isIsolated && setTooltip(inst.name)}
+										onMouseLeave={() => setTooltip(null)}
+										className={[
+											'flex flex-col gap-0.5 px-3 py-2 rounded-lg border text-left transition-all',
+											isIsolated
+												? 'border-amber-400/60 bg-amber-400/5'
+												: isSelected
+												? 'border-white/40 bg-white/5'
+												: 'border-white/10 opacity-50 hover:opacity-80 hover:border-white/25',
+										].join(' ')}
+									>
+										<span className="text-xs font-mono">{inst.name}</span>
+										<span className="text-[10px] opacity-40 font-mono">
+											{Object.entries(inst.coordinates)
+												.map(([k, v]) => `${k} ${v}`)
+												.join(' ')}
+										</span>
+									</button>
+
+									{tooltip === inst.name && (
+										<div className="absolute bottom-full left-0 mb-2 z-10 bg-[#0c1417] border border-amber-400/30 rounded-lg px-3 py-2 text-xs text-amber-300/80 whitespace-nowrap shadow-xl pointer-events-none">
+											⚠ No adjacent neighbours selected — generates a separate file
+										</div>
+									)}
+								</div>
+							)
+						})}
+					</div>
+
+					{selected.size > 0 && (
+						<button
+							onClick={() => setSelected(new Set())}
+							className="self-start text-xs opacity-25 hover:opacity-60 transition-opacity"
+						>
+							Clear selection
+						</button>
 					)}
 
-					{subfamilies.map((sub) => (
-						<div key={sub.id} className="rounded-xl border border-white/10 px-5 pt-4 pb-5">
-							<div className="flex items-center gap-3 mb-2">
-								<input
-									type="text"
-									value={sub.name}
-									onChange={(e) => renameSubfamily(sub.id, e.target.value)}
-									placeholder="Variant name"
-									className="flex-1 bg-transparent text-sm font-mono border-b border-white/10 focus:border-white/30 outline-none pb-1"
-									aria-label="Variant name"
-								/>
-								<button
-									onClick={() => removeSubfamily(sub.id)}
-									className="text-xs opacity-25 hover:opacity-60 transition-opacity shrink-0"
-								>
-									Remove
-								</button>
-							</div>
-
-							{axes.map((axis) => (
-								<AxisRow
-									key={axis.tag}
-									axis={axis}
-									config={sub.axisConfigs[axis.tag] ?? defaultConfig(axis)}
-									onChange={(cfg) => updateAxisConfig(sub.id, axis.tag, cfg)}
-								/>
-							))}
-						</div>
-					))}
-
-					<button
-						onClick={addSubfamily}
-						className="self-start text-xs px-4 py-2 rounded-full border border-white/15 hover:bg-white/5 transition-colors opacity-50 hover:opacity-100"
-					>
-						+ Add variant
-					</button>
+					{loadState === 'ready' && instances.length === 0 && (
+						<p className="text-sm opacity-30 italic">
+							This font has no named instances — use the axis controls below
+						</p>
+					)}
 				</div>
 			)}
 
-			{/* Validation callouts */}
-			{noRestrictions && (
-				<p className="text-xs text-amber-400/70">
-					⚠ All axes are set to Full — no axis restrictions means the output will be the same size as the input
-				</p>
-			)}
+			{/* Group previews */}
+			{groups.length > 0 && (
+				<div className="flex flex-col gap-6">
+					<p className="text-xs opacity-35 uppercase tracking-widest">
+						{groups.length === 1 ? '1 output file' : `${groups.length} output files`}
+					</p>
 
-			{/* Code output */}
-			{loadState === 'ready' && (
-				<div className="flex flex-col gap-2">
-					<p className="text-xs opacity-35 uppercase tracking-widest">Generated code</p>
-					<pre className="bg-white/5 rounded-xl p-4 overflow-x-auto text-xs leading-relaxed font-mono opacity-75 whitespace-pre">
-						<code>{code}</code>
-					</pre>
+					{groups.map((group, i) => {
+						const first = group.instances[0]
+						const last  = group.instances[group.instances.length - 1]
+						const label = group.instances.length === 1
+							? first.name
+							: `${first.name} → ${last.name}`
+						const isIsolated = group.instances.length === 1
+
+						return (
+							<div
+								key={i}
+								className={[
+									'rounded-xl border px-5 pt-5 pb-5 flex flex-col gap-5',
+									isIsolated ? 'border-amber-400/25' : 'border-white/10',
+								].join(' ')}
+							>
+								{/* Header */}
+								<div className="flex flex-col gap-1">
+									<div className="flex items-center gap-2 flex-wrap">
+										<span className="text-sm font-mono opacity-80">{label}</span>
+										{isIsolated && (
+											<span className="text-xs text-amber-400/60">
+												⚠ isolated — single-instance file
+											</span>
+										)}
+									</div>
+									{group.collateral.length > 0 && (
+										<p className="text-xs text-amber-400/60">
+											⚠ range also covers{' '}
+											<span className="font-mono">{group.collateral.join(', ')}</span>
+										</p>
+									)}
+								</div>
+
+								{/* Text preview */}
+								{hasDemoFont && (
+									<TextPreview axes={axes} axisRanges={group.axisRanges} />
+								)}
+
+								{/* Axis range bars */}
+								<div className="flex flex-col gap-2">
+									{axes.map((axis) => (
+										<AxisRangeBar
+											key={axis.tag}
+											axis={axis}
+											range={group.axisRanges[axis.tag] ?? { min: axis.minimum, max: axis.maximum }}
+										/>
+									))}
+								</div>
+
+								{/* Instance list */}
+								<p className="text-[10px] font-mono opacity-20">
+									{group.instances.map((inst) => inst.name).join(' · ')}
+								</p>
+							</div>
+						)
+					})}
 				</div>
 			)}
 
 			{/* Download */}
-			{loadState === 'ready' && subfamilies.length > 0 && (
+			{groups.length > 0 && (
 				<div className="flex flex-col gap-2">
-					{errors && (
-						<p className="text-xs text-red-400">Fix errors above before downloading</p>
-					)}
 					{processError && (
 						<p className="text-xs text-red-400">{processError}</p>
 					)}
 					<div className="flex items-center gap-4 flex-wrap">
 						<button
 							onClick={handleDownload}
-							disabled={processing || errors}
+							disabled={processing}
 							className="text-sm px-5 py-2.5 rounded-full border border-white/20 hover:bg-white/5 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
 						>
 							{processing
 								? 'Processing… (may take up to 30 s)'
-								: `Download ${subfamilies.length === 1 ? '1 variant' : `${subfamilies.length} variants`} as TTF`}
+								: `Download ${groups.length === 1 ? '1 restricted VF' : `${groups.length} restricted VFs`}`}
 						</button>
 						{processing && (
 							<p className="text-xs opacity-35">
