@@ -76,6 +76,59 @@ function generateCode(groups: InstanceGroup[], fontName: string): string {
 	].join('\n')
 }
 
+/** Axes that define weight or italic variation — excluded from subfamily grouping. */
+const SUBFAMILY_EXCLUDE = new Set(['wght', 'ital', 'slnt'])
+
+function longestCommonPrefix(strings: string[]): string {
+	if (!strings.length) return ''
+	let prefix = strings[0]
+	for (const s of strings.slice(1)) {
+		while (prefix && !s.startsWith(prefix)) prefix = prefix.slice(0, -1)
+	}
+	return prefix
+}
+
+/**
+ * Group named instances into subfamilies.
+ * The grouping axis is the non-weight, non-italic axis with the fewest distinct
+ * values (most "subfamily-like"). The label is the longest common name prefix
+ * of the instances in each group.
+ */
+function groupBySubfamily(
+	instances: FontInstance[],
+	axes: AxisDefinition[],
+): Array<{ label: string; key: string; axisTag: string | null; instances: FontInstance[] }> {
+	const candidates = axes
+		.filter((ax) => !SUBFAMILY_EXCLUDE.has(ax.tag))
+		.map((ax) => {
+			const vals = [
+				...new Set(instances.map((i) => i.coordinates[ax.tag] ?? ax.default)),
+			].sort((a, b) => a - b)
+			return { ax, vals }
+		})
+		.filter(({ vals }) => vals.length > 1)
+		.sort((a, b) => a.vals.length - b.vals.length)
+
+	if (!candidates.length) {
+		return [{ label: '', key: 'all', axisTag: null, instances }]
+	}
+
+	const { ax: groupAxis, vals } = candidates[0]
+
+	return vals.map((val) => {
+		const members = instances.filter(
+			(i) => (i.coordinates[groupAxis.tag] ?? groupAxis.default) === val,
+		)
+		const prefix = longestCommonPrefix(members.map((i) => i.name)).trim()
+		return {
+			label: prefix || `${groupAxis.tag} ${val}`,
+			key: `${groupAxis.tag}-${val}`,
+			axisTag: groupAxis.tag,
+			instances: members,
+		}
+	})
+}
+
 /** The axis with the widest normalised range — used as the primary sort key. */
 function primaryAxis(axes: AxisDefinition[]): AxisDefinition | null {
 	if (!axes.length) return null
@@ -326,6 +379,11 @@ export default function Demo() {
 		})
 	}, [axes, instances])
 
+	const subfamilyGroups = useMemo(
+		() => groupBySubfamily(instances, axes),
+		[instances, axes],
+	)
+
 	const groups = useMemo(() => {
 		const base = computeGroups(instances, selected, axes)
 		if (!Object.keys(axisOverrides).length) return base
@@ -539,49 +597,74 @@ export default function Demo() {
 				</label>
 			</div>
 
-			{/* Instance selection grid */}
+			{/* Instance selection grid — grouped by subfamily */}
 			{loadState === 'ready' && instances.length > 0 && (
-				<div className="flex flex-col gap-3">
+				<div className="flex flex-col gap-4">
 					<p className="text-xs opacity-35 uppercase tracking-widest">
 						Named instances — adjacent selections merge into one output file
 					</p>
-					<div className="flex flex-wrap gap-2">
-						{instances.map((inst) => {
-							const isSelected = selected.has(inst.name)
-							const isIsolated = isSelected && isolatedInstances.has(inst.name)
 
-							return (
-								<div key={inst.name} className="relative">
-									<button
-										onClick={() => toggleInstance(inst.name)}
-										onMouseEnter={() => isIsolated && setTooltip(inst.name)}
-										onMouseLeave={() => setTooltip(null)}
-										className={[
-											'flex flex-col gap-0.5 px-3 py-2 rounded-lg border text-left transition-all',
-											isIsolated
-												? 'border-amber-400/60 bg-amber-400/5'
-												: isSelected
-												? 'border-white/40 bg-white/5'
-												: 'border-white/10 opacity-50 hover:opacity-80 hover:border-white/25',
-										].join(' ')}
-									>
-										<span className="text-xs font-mono">{inst.name}</span>
-										<span className="text-[10px] opacity-40 font-mono">
-											{Object.entries(inst.coordinates)
-												.map(([k, v]) => `${k} ${v}`)
-												.join(' ')}
-										</span>
-									</button>
+					{subfamilyGroups.map((group) => {
+						// Strip the shared subfamily prefix from button labels
+						const prefixLen = group.label && !group.label.includes(' ')
+							? group.label.length + 1  // "Condensed " → strip "Condensed "
+							: 0
 
-									{tooltip === inst.name && (
-										<div className="absolute bottom-full left-0 mb-2 z-10 bg-[#0c1417] border border-amber-400/30 rounded-lg px-3 py-2 text-xs text-amber-300/80 whitespace-nowrap shadow-xl pointer-events-none">
-											⚠ No adjacent neighbours selected — generates a separate file
-										</div>
-									)}
+						return (
+							<div key={group.key} className="flex flex-col gap-2">
+								{group.label && (
+									<p className="text-[10px] font-mono opacity-30 uppercase tracking-widest">
+										{group.label}
+									</p>
+								)}
+								<div className="flex flex-wrap gap-2">
+									{group.instances.map((inst) => {
+										const isSelected = selected.has(inst.name)
+										const isIsolated = isSelected && isolatedInstances.has(inst.name)
+										const displayName = prefixLen && inst.name.startsWith(group.label + ' ')
+											? inst.name.slice(prefixLen)
+											: inst.name
+
+										// Show only non-group-axis coordinates in the button
+										const coordEntries = Object.entries(inst.coordinates).filter(
+											([k]) => k !== group.axisTag,
+										)
+
+										return (
+											<div key={inst.name} className="relative">
+												<button
+													onClick={() => toggleInstance(inst.name)}
+													onMouseEnter={() => isIsolated && setTooltip(inst.name)}
+													onMouseLeave={() => setTooltip(null)}
+													className={[
+														'flex flex-col gap-0.5 px-3 py-2 rounded-lg border text-left transition-all',
+														isIsolated
+															? 'border-amber-400/60 bg-amber-400/5'
+															: isSelected
+															? 'border-white/40 bg-white/5'
+															: 'border-white/10 opacity-50 hover:opacity-80 hover:border-white/25',
+													].join(' ')}
+												>
+													<span className="text-xs font-mono">{displayName}</span>
+													{coordEntries.length > 0 && (
+														<span className="text-[10px] opacity-40 font-mono">
+															{coordEntries.map(([k, v]) => `${k} ${v}`).join(' ')}
+														</span>
+													)}
+												</button>
+
+												{tooltip === inst.name && (
+													<div className="absolute bottom-full left-0 mb-2 z-10 bg-[#0c1417] border border-amber-400/30 rounded-lg px-3 py-2 text-xs text-amber-300/80 whitespace-nowrap shadow-xl pointer-events-none">
+														⚠ No adjacent neighbours selected — generates a separate file
+													</div>
+												)}
+											</div>
+										)
+									})}
 								</div>
-							)
-						})}
-					</div>
+							</div>
+						)
+					})}
 
 					{selected.size > 0 && (
 						<button
@@ -590,12 +673,6 @@ export default function Demo() {
 						>
 							Clear selection
 						</button>
-					)}
-
-					{loadState === 'ready' && instances.length === 0 && (
-						<p className="text-sm opacity-30 italic">
-							This font has no named instances — use the axis controls below
-						</p>
 					)}
 				</div>
 			)}
