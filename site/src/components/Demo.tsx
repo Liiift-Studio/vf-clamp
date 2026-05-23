@@ -26,6 +26,49 @@ function toBase64(buf: Uint8Array<ArrayBuffer>): string {
 	return btoa(binary)
 }
 
+/** Generate a vf-clamp npm code snippet from the current groups. */
+function generateCode(groups: InstanceGroup[], fontName: string): string {
+	if (!groups.length) return ''
+
+	const safe = fontName.replace(/\s+/g, '-') || 'MyFont-VF'
+
+	const subLines = groups.flatMap((group) => {
+		const first = group.instances[0]
+		const last  = group.instances[group.instances.length - 1]
+		const name  = group.instances.length === 1 ? first.name : `${first.name}–${last.name}`
+		const axisEntries = Object.entries(group.axisRanges).map(([tag, r]) =>
+			r.min === r.max
+				? `        ${tag}: ${r.min},`
+				: `        ${tag}: { min: ${r.min}, max: ${r.max} },`,
+		)
+		return [
+			`    {`,
+			`      name: '${name}',`,
+			`      axes: {`,
+			...axisEntries,
+			`      },`,
+			`    },`,
+		]
+	})
+
+	return [
+		`import { clampFont } from 'vf-clamp'`,
+		`import { readFile, writeFile } from 'fs/promises'`,
+		``,
+		`const source = await readFile('${safe}.ttf')`,
+		``,
+		`const results = await clampFont(source, {`,
+		`  subfamilies: [`,
+		...subLines,
+		`  ],`,
+		`})`,
+		``,
+		`for (const result of results) {`,
+		`  await writeFile(\`${safe}-\${result.name}.ttf\`, result.buffer)`,
+		`}`,
+	].join('\n')
+}
+
 /** The axis with the widest normalised range — used as the primary sort key. */
 function primaryAxis(axes: AxisDefinition[]): AxisDefinition | null {
 	if (!axes.length) return null
@@ -189,6 +232,7 @@ export default function Demo() {
 	const [processError, setProcessError] = useState<string | null>(null)
 	const [tooltip, setTooltip]           = useState<string | null>(null)
 	const [hasDemoFont, setHasDemoFont]   = useState(false)
+	const [showCode, setShowCode]         = useState(false)
 
 	const isLoadingRef = useRef(false)
 	const containerRef = useRef<HTMLDivElement>(null)
@@ -552,27 +596,46 @@ export default function Demo() {
 				</div>
 			)}
 
-			{/* Download */}
+			{/* Code + Download */}
 			{groups.length > 0 && (
-				<div className="flex flex-col gap-2">
-					{processError && (
-						<p className="text-xs text-red-400">{processError}</p>
-					)}
-					<div className="flex items-center gap-4 flex-wrap">
+				<div className="flex flex-col gap-4">
+
+					{/* See code toggle */}
+					<div className="flex flex-col gap-3">
 						<button
-							onClick={handleDownload}
-							disabled={processing}
-							className="text-sm px-5 py-2.5 rounded-full border border-white/20 hover:bg-white/5 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+							onClick={() => setShowCode((v) => !v)}
+							className="self-start text-xs px-3 py-1.5 rounded-full border border-white/15 hover:bg-white/5 transition-colors opacity-60 hover:opacity-100"
 						>
-							{processing
-								? 'Processing… (may take up to 30 s)'
-								: `Download ${groups.length === 1 ? '1 restricted VF' : `${groups.length} restricted VFs`}`}
+							{showCode ? 'Hide code' : 'See code'}
 						</button>
-						{processing && (
-							<p className="text-xs opacity-35">
-								fonttools is running on the server — first run includes engine startup
-							</p>
+						{showCode && (
+							<pre className="bg-white/5 rounded-xl p-4 overflow-x-auto text-xs leading-relaxed font-mono opacity-75 whitespace-pre">
+								<code>{generateCode(groups, fontName)}</code>
+							</pre>
 						)}
+					</div>
+
+					{/* Download */}
+					<div className="flex flex-col gap-2">
+						{processError && (
+							<p className="text-xs text-red-400">{processError}</p>
+						)}
+						<div className="flex items-center gap-4 flex-wrap">
+							<button
+								onClick={handleDownload}
+								disabled={processing}
+								className="text-sm px-5 py-2.5 rounded-full border border-white/20 hover:bg-white/5 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+							>
+								{processing
+									? 'Processing… (may take up to 30 s)'
+									: `Download ${groups.length === 1 ? '1 restricted VF' : `${groups.length} restricted VFs`}`}
+							</button>
+							{processing && (
+								<p className="text-xs opacity-35">
+									fonttools is running on the server — first run includes engine startup
+								</p>
+							)}
+						</div>
 					</div>
 				</div>
 			)}
