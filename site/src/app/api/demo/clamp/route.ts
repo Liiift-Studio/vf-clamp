@@ -1,8 +1,8 @@
 // site/src/app/api/demo/clamp/route.ts — unauthenticated demo endpoint
 // Accepts { font: base64, subfamilies, format? } and returns restricted font buffers.
 import { type NextRequest, NextResponse } from 'next/server'
-import { clampFont } from 'vf-clamp'
-import type { OutputConfig, OutputFormat } from 'vf-clamp'
+import { clampFont } from '@liiift-studio/vf-clamp'
+import type { OutputConfig, OutputFormat } from '@liiift-studio/vf-clamp'
 import { checkRateLimit, getClientIp } from '../../../../lib/rateLimit'
 
 const MAX_BYTES = 20 * 1024 * 1024 // 20 MB

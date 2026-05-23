@@ -2,7 +2,7 @@
 // Fetches a variable font from Sanity, runs clampFont for each vfClampConfig entry, and
 // patches the font document with the generated restrictedVariants.
 import { createClient } from '@sanity/client'
-import { clampFont } from 'vf-clamp'
+import { clampFont } from '@liiift-studio/vf-clamp'
 
 interface VfClampConfigEntry {
 	/** Variant name, e.g. "Condensed" */

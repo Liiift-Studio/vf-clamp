@@ -106,7 +106,7 @@ export default function Home() {
 
 					<div className="flex flex-col gap-3">
 						<p className="opacity-50">From named instances — hull computed automatically</p>
-						<CodeBlock code={`import { clampFont } from 'vf-clamp'
+						<CodeBlock code={`import { clampFont } from '@liiift-studio/vf-clamp'
 import { readFile, writeFile } from 'fs/promises'
 
 const source = await readFile('Omnes-VF.ttf')
@@ -188,7 +188,7 @@ for (const result of results) {
 					and named instance defined in the font — useful for discovering what can be clamped
 					before building a subfamily config.
 				</p>
-				<CodeBlock code={`import { getInstances } from 'vf-clamp'
+				<CodeBlock code={`import { getInstances } from '@liiift-studio/vf-clamp'
 import { readFile } from 'fs/promises'
 
 const font = await readFile('MyFont-VF.ttf')

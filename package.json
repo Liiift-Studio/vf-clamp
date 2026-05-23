@@ -1,5 +1,5 @@
 {
-	"name": "vf-clamp",
+	"name": "@liiift-studio/vf-clamp",
 	"version": "2.0.0",
 	"description": "Restrict a variable font's axis ranges to a specific subfamily scope — like CSS clamp() for design space.",
 	"type": "module",

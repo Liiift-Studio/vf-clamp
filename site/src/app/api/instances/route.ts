@@ -1,6 +1,6 @@
 // site/src/app/api/instances/route.ts — POST /api/instances: extract axis + instance data from a variable font
 import { type NextRequest, NextResponse } from 'next/server'
-import { getInstances } from 'vf-clamp'
+import { getInstances } from '@liiift-studio/vf-clamp'
 
 interface InstancesRequest {
 	/** URL of the source variable font (TTF). Fetched server-side — must be publicly accessible. */

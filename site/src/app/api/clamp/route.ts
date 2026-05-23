@@ -1,7 +1,7 @@
 // site/src/app/api/clamp/route.ts — POST /api/clamp microservice endpoint
 import { type NextRequest, NextResponse } from 'next/server'
-import { clampFont } from 'vf-clamp'
-import type { OutputConfig, OutputFormat } from 'vf-clamp'
+import { clampFont } from '@liiift-studio/vf-clamp'
+import type { OutputConfig, OutputFormat } from '@liiift-studio/vf-clamp'
 
 interface ClampRequest {
 	/** URL of the source variable font. Fetched server-side — must be publicly accessible. */

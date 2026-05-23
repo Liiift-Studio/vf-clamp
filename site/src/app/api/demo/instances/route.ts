@@ -1,7 +1,7 @@
 // site/src/app/api/demo/instances/route.ts — unauthenticated demo endpoint
 // Accepts a raw font binary and returns { axes, instances }.
 import { type NextRequest, NextResponse } from 'next/server'
-import { getInstances } from 'vf-clamp'
+import { getInstances } from '@liiift-studio/vf-clamp'
 import { checkRateLimit, getClientIp } from '../../../../lib/rateLimit'
 
 const MAX_BYTES = 20 * 1024 * 1024 // 20 MB
