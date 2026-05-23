@@ -48,6 +48,11 @@ export default function Home() {
 			{/* Interactive demo */}
 		<section className="w-full max-w-2xl lg:max-w-5xl flex flex-col gap-4">
 			<p className="text-xs uppercase tracking-widest opacity-50">Interactive demo</p>
+			<p className="text-sm opacity-50 leading-relaxed max-w-lg">
+				Load Inter Variable or drop any variable font. Select named instances — adjacent selections
+				merge into a single output file. Isolated selections generate their own file, flagged in yellow.
+				Preview the restricted design space live, then download the clamped TTFs.
+			</p>
 			<div className="rounded-xl -mx-2 px-8 py-8" style={{ background: "rgba(0,0,0,0.2)" }}>
 				<Demo />
 			</div>
@@ -58,11 +63,20 @@ export default function Home() {
 				<p className="text-xs uppercase tracking-widest opacity-50">How it works</p>
 				<div className="grid grid-cols-1 sm:grid-cols-2 gap-12 text-sm leading-relaxed opacity-70 prose-grid">
 					<div className="flex flex-col gap-3">
-						<p className="font-semibold opacity-100 text-base">Pin an axis to lock it</p>
+						<p className="font-semibold opacity-100 text-base">Start from named instances</p>
+						<p>
+							Variable fonts ship with named instances — presets like Regular, Bold, or Condensed
+							that map to specific axis coordinates. Use <code className="text-xs font-mono">getInstances()</code> to
+							read them, then pass adjacent instances as a subfamily to produce a restricted VF that
+							spans exactly that slice of the design space.
+						</p>
+					</div>
+					<div className="flex flex-col gap-3">
+						<p className="font-semibold opacity-100 text-base">Pin an axis to remove it</p>
 						<p>
 							Setting an axis to a number fixes it at that value and removes it from the
 							output font&rsquo;s fvar table. Unused glyph masters and gvar deltas are
-							stripped, so the result is a smaller static-like font.
+							stripped — the result is a smaller, static-like font with no unnecessary variation.
 						</p>
 					</div>
 					<div className="flex flex-col gap-3">
@@ -75,20 +89,12 @@ export default function Home() {
 						</p>
 					</div>
 					<div className="flex flex-col gap-3">
-						<p className="font-semibold opacity-100 text-base">No Python required</p>
+						<p className="font-semibold opacity-100 text-base">No Python, multiple outputs</p>
 						<p>
-							fonttools runs inside Pyodide, a Python interpreter compiled to WebAssembly.
-							The Pyodide instance is a shared singleton, so the cold start is paid once
-							per process. Subsequent calls reuse the warm runtime with no overhead.
-						</p>
-					</div>
-					<div className="flex flex-col gap-3">
-						<p className="font-semibold opacity-100 text-base">Multiple subfamilies in one call</p>
-						<p>
-							One <code className="text-xs font-mono">clampFont()</code> call produces any
-							number of restricted variants from the same source font. Subfamilies are
-							processed sequentially against the shared Pyodide instance. Output is an
-							array of named buffers ready to write to disk or upload.
+							fonttools runs inside Pyodide — a Python interpreter compiled to WebAssembly.
+							One <code className="text-xs font-mono">clampFont()</code> call produces any number
+							of restricted variants from the same source. The Pyodide instance is a shared
+							singleton: the cold start is paid once per process, subsequent calls are fast.
 						</p>
 					</div>
 				</div>
@@ -146,8 +152,8 @@ await writeFile('Omnes-Text-VF.woff2', results[0].buffer)`} />
 							<tbody className="opacity-70">
 								<tr className="border-t border-white/10 hover:bg-white/5 transition-colors"><td className="py-2 pr-6 font-mono">number</td><td className="py-2">Pin axis at value — removed from output design space</td></tr>
 								<tr className="border-t border-white/10 hover:bg-white/5 transition-colors"><td className="py-2 pr-6 font-mono">&#123; min, max &#125;</td><td className="py-2">Restrict to range — axis stays variable within bounds</td></tr>
-								<tr className="border-t border-white/10 hover:bg-white/5 transition-colors"><td className="py-2 pr-6 font-mono">null</td><td className="py-2">Omit — axis keeps its full original range</td></tr>
-								<tr className="border-t border-white/10 hover:bg-white/5 transition-colors"><td className="py-2 pr-6 font-mono italic opacity-50">omitted</td><td className="py-2">Same as null — axis unchanged</td></tr>
+								<tr className="border-t border-white/10 hover:bg-white/5 transition-colors"><td className="py-2 pr-6 font-mono">null</td><td className="py-2">Drop axis at its default — removed from output, same as pinning at default</td></tr>
+								<tr className="border-t border-white/10 hover:bg-white/5 transition-colors"><td className="py-2 pr-6 font-mono italic opacity-50">omitted</td><td className="py-2">Keep full original range — axis is unchanged</td></tr>
 							</tbody>
 						</table>
 					</div>
