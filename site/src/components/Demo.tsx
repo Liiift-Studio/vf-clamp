@@ -99,11 +99,19 @@ function computeGroups(
 	const primary = primaryAxis(axes)
 	if (!primary) return []
 
-	const sorted = [...instances].sort(
-		(a, b) =>
-			(a.coordinates[primary.tag] ?? primary.default) -
-			(b.coordinates[primary.tag] ?? primary.default),
-	)
+	// Sort by secondary axes first so instances sharing the same non-primary
+	// coordinates are contiguous — e.g. all SemiExpanded instances stay together
+	// before the sort by wght, enabling correct adjacent-run detection.
+	const sorted = [...instances].sort((a, b) => {
+		for (const axis of axes) {
+			if (axis.tag === primary.tag) continue
+			const av = a.coordinates[axis.tag] ?? axis.default
+			const bv = b.coordinates[axis.tag] ?? axis.default
+			if (av !== bv) return av - bv
+		}
+		return (a.coordinates[primary.tag] ?? primary.default) -
+			(b.coordinates[primary.tag] ?? primary.default)
+	})
 
 	// Build runs of consecutive selected instances
 	const runs: FontInstance[][] = []
