@@ -49,7 +49,7 @@ function subfamilyFromInstance(inst: FontInstance, axes: AxisDefinition[]): Subf
 }
 
 // Encode Uint8Array → base64 without exceeding call-stack limits on large fonts
-function toBase64(buf: Uint8Array): string {
+function toBase64(buf: Uint8Array<ArrayBuffer>): string {
 	let binary = ''
 	const chunk = 0x8000
 	for (let i = 0; i < buf.length; i += chunk) {
@@ -283,7 +283,7 @@ const ACCEPT = '.ttf,.otf,.woff,.woff2'
 type LoadState = 'idle' | 'loading' | 'ready' | 'error'
 
 export default function Demo() {
-	const [fontBuffer, setFontBuffer] = useState<Uint8Array | null>(null)
+	const [fontBuffer, setFontBuffer] = useState<Uint8Array<ArrayBuffer> | null>(null)
 	const [fontName, setFontName]     = useState('')
 	const [axes, setAxes]             = useState<AxisDefinition[]>([])
 	const [instances, setInstances]   = useState<FontInstance[]>([])
@@ -324,7 +324,7 @@ export default function Demo() {
 		return () => observer.disconnect()
 	}, [])
 
-	const loadFont = useCallback(async (buffer: Uint8Array, name: string) => {
+	const loadFont = useCallback(async (buffer: Uint8Array<ArrayBuffer>, name: string) => {
 		if (isLoadingRef.current) return
 		isLoadingRef.current = true
 
