@@ -242,6 +242,8 @@ export default function Demo() {
 	const [tooltip, setTooltip]                 = useState<string | null>(null)
 	const [hasDemoFont, setHasDemoFont]         = useState(false)
 	const [showCode, setShowCode]               = useState(false)
+	const [showAdvanced, setShowAdvanced]       = useState(false)
+	const [axisOverrides, setAxisOverrides]     = useState<Record<string, { min: number; max: number }>>({})
 
 	const isLoadingRef       = useRef(false)
 	const containerRef       = useRef<HTMLDivElement>(null)
@@ -293,10 +295,27 @@ export default function Demo() {
 		}
 	}, [fontBuffer])
 
-	const groups = useMemo(
-		() => computeGroups(instances, selected, axes),
-		[instances, selected, axes],
-	)
+	/**
+	 * Axes where every named instance shares the same coordinate value — i.e. the
+	 * named-instance system doesn't provide variation for them. Exposed in the
+	 * Advanced panel so the user can manually add a range.
+	 */
+	const freeAxes = useMemo(() => {
+		if (!axes.length || !instances.length) return []
+		return axes.filter((axis) => {
+			const vals = new Set(instances.map((i) => i.coordinates[axis.tag] ?? axis.default))
+			return vals.size <= 1
+		})
+	}, [axes, instances])
+
+	const groups = useMemo(() => {
+		const base = computeGroups(instances, selected, axes)
+		if (!Object.keys(axisOverrides).length) return base
+		return base.map((group) => ({
+			...group,
+			axisRanges: { ...group.axisRanges, ...axisOverrides },
+		}))
+	}, [instances, selected, axes, axisOverrides])
 
 	/** Selected instances that are alone in their group (no adjacent neighbours). */
 	const isolatedInstances = useMemo(() => {
@@ -314,6 +333,8 @@ export default function Demo() {
 		setAxes([])
 		setInstances([])
 		setSelected(new Set())
+		setAxisOverrides({})
+		setShowAdvanced(false)
 		setFontBuffer(buffer)
 		setFontName(name)
 
@@ -504,7 +525,7 @@ export default function Demo() {
 			{loadState === 'ready' && instances.length > 0 && (
 				<div className="flex flex-col gap-3">
 					<p className="text-xs opacity-35 uppercase tracking-widest">
-						Select instances — adjacent selections merge into one output file
+						Named instances — adjacent selections merge into one output file
 					</p>
 					<div className="flex flex-wrap gap-2">
 						{instances.map((inst) => {
@@ -557,6 +578,74 @@ export default function Demo() {
 						<p className="text-sm opacity-30 italic">
 							This font has no named instances — use the axis controls below
 						</p>
+					)}
+				</div>
+			)}
+
+			{/* Advanced: free axes */}
+			{loadState === 'ready' && freeAxes.length > 0 && (
+				<div className="flex flex-col gap-3">
+					<button
+						onClick={() => setShowAdvanced((v) => !v)}
+						className="self-start flex items-center gap-1.5 text-xs opacity-30 hover:opacity-60 transition-opacity"
+					>
+						<span>{showAdvanced ? '▾' : '▸'}</span>
+						<span>Advanced</span>
+					</button>
+					{showAdvanced && (
+						<div className="flex flex-col gap-4 pl-4 border-l border-white/10">
+							<p className="text-xs opacity-35 leading-relaxed max-w-sm">
+								{freeAxes.length === 1
+									? `The ${freeAxes[0].name} axis isn't set by named instances — add a range to include it in all output files.`
+									: `These axes aren't set by named instances — add ranges to include them in all output files.`}
+							</p>
+							{freeAxes.map((axis) => {
+								const override = axisOverrides[axis.tag]
+								const curMin = override?.min ?? axis.default
+								const curMax = override?.max ?? axis.default
+								return (
+									<div key={axis.tag} className="flex items-center gap-3 flex-wrap text-xs">
+										<span className="font-mono opacity-40 w-10 shrink-0">{axis.tag}</span>
+										<span className="opacity-30 shrink-0">{axis.name}</span>
+										<div className="flex items-center gap-2">
+											<input
+												type="number"
+												min={axis.minimum}
+												max={curMax}
+												value={curMin}
+												onChange={(e) => {
+													const min = Math.max(axis.minimum, Math.min(Number(e.target.value), curMax))
+													setAxisOverrides((prev) => ({ ...prev, [axis.tag]: { min, max: curMax } }))
+												}}
+												className="w-20 bg-white/5 border border-white/10 rounded px-2 py-1 font-mono text-center focus:outline-none focus:border-white/30 transition-colors"
+											/>
+											<span className="opacity-20">–</span>
+											<input
+												type="number"
+												min={curMin}
+												max={axis.maximum}
+												value={curMax}
+												onChange={(e) => {
+													const max = Math.min(axis.maximum, Math.max(Number(e.target.value), curMin))
+													setAxisOverrides((prev) => ({ ...prev, [axis.tag]: { min: curMin, max } }))
+												}}
+												className="w-20 bg-white/5 border border-white/10 rounded px-2 py-1 font-mono text-center focus:outline-none focus:border-white/30 transition-colors"
+											/>
+										</div>
+										<span className="opacity-20 font-mono tabular-nums">{axis.minimum}–{axis.maximum}</span>
+										{override && (
+											<button
+												onClick={() => setAxisOverrides((prev) => { const next = { ...prev }; delete next[axis.tag]; return next })}
+												className="opacity-20 hover:opacity-60 transition-opacity"
+												aria-label={`Reset ${axis.name}`}
+											>
+												×
+											</button>
+										)}
+									</div>
+								)
+							})}
+						</div>
 					)}
 				</div>
 			)}
