@@ -35,12 +35,14 @@ function toBase64(buf: Uint8Array<ArrayBuffer>): string {
 
 const FORMAT_MIME: Record<OutputFormat, string> = {
 	ttf:   'font/ttf',
+	otf:   'font/otf',
 	woff:  'font/woff',
 	woff2: 'font/woff2',
 }
 
 const FORMAT_EXT: Record<OutputFormat, string> = {
 	ttf:   'ttf',
+	otf:   'otf',
 	woff:  'woff',
 	woff2: 'woff2',
 }
@@ -865,7 +867,7 @@ export default function Demo() {
 							{/* Format selector */}
 							{!processing && (
 								<div className="flex items-center rounded-full border border-white/15 overflow-hidden text-xs">
-									{(['ttf', 'woff', 'woff2'] as OutputFormat[]).map((fmt) => (
+									{(['ttf', 'otf', 'woff', 'woff2'] as OutputFormat[]).map((fmt) => (
 										<button
 											key={fmt}
 											onClick={() => setOutputFormat(fmt)}

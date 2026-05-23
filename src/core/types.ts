@@ -45,11 +45,11 @@ export interface ClampOptions {
 }
 
 /**
- * Output format for clampFont() — TTF is the default.
- * WOFF and WOFF2 transcode the output to web-compressed flavours.
- * OTF input is preserved as-is when format is omitted or 'ttf'.
+ * Output format for clampFont() — defaults to 'ttf'.
+ * 'woff' and 'woff2' transcode to web-compressed flavours.
+ * 'otf' is a passthrough (no outline conversion); the instancer preserves the input flavour.
  */
-export type OutputFormat = 'ttf' | 'woff' | 'woff2'
+export type OutputFormat = 'ttf' | 'otf' | 'woff' | 'woff2'
 
 /** One output from clampFont() — a restricted variable font for a single subfamily */
 export interface ClampResult {
