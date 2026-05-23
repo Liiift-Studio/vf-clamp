@@ -49,7 +49,7 @@ export default function Home() {
 		<section className="w-full max-w-2xl lg:max-w-5xl flex flex-col gap-4">
 			<p className="text-xs uppercase tracking-widest opacity-50">Interactive demo</p>
 			<p className="text-sm opacity-50 leading-relaxed max-w-lg">
-				Load Inter Variable or drop any variable font. Select named instances — adjacent selections
+				Load Encode Sans or drop any variable font. Select named instances — adjacent selections
 				merge into a single output file. Isolated selections generate their own file, flagged in yellow.
 				Preview the restricted design space live, then download the clamped TTFs.
 			</p>

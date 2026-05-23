@@ -222,8 +222,8 @@ function TextPreview({
 
 // ── Main component ────────────────────────────────────────────────────────────
 
-const DEFAULT_FONT_URL  = '/fonts/Inter-Variable.ttf'
-const DEFAULT_FONT_NAME = 'Inter Variable'
+const DEFAULT_FONT_URL  = '/fonts/EncodeSans.ttf'
+const DEFAULT_FONT_NAME = 'Encode Sans'
 const ACCEPT = '.ttf,.otf,.woff,.woff2'
 
 export default function Demo() {
@@ -366,7 +366,7 @@ export default function Demo() {
 			if (!res.ok) throw new Error(`HTTP ${res.status}`)
 			await loadFont(new Uint8Array(await res.arrayBuffer()), DEFAULT_FONT_NAME)
 		} catch (err) {
-			setLoadError(err instanceof Error ? err.message : 'Failed to load Inter Variable')
+			setLoadError(err instanceof Error ? err.message : 'Failed to load Encode Sans')
 			setLoadState('error')
 		}
 	}, [loadState, loadFont])
@@ -483,7 +483,7 @@ export default function Demo() {
 									onClick={handleLoadDefault}
 									className="underline underline-offset-2 hover:opacity-100 transition-opacity"
 								>
-									Inter Variable
+									Encode Sans
 								</button>{' '}
 								or drop any variable font to explore its instances
 							</p>
