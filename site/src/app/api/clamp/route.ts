@@ -8,7 +8,7 @@ interface ClampRequest {
 	fontUrl: string
 	/** One entry per restricted variant to produce */
 	subfamilies: SubfamilyConfig[]
-	/** Output format — 'ttf' (default) or 'woff2' */
+	/** Output format — 'ttf' (default), 'otf', 'woff', or 'woff2' */
 	format?: OutputFormat
 }
 

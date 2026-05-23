@@ -2,7 +2,7 @@
 // Demo.tsx — instance-based vf-clamp demo: select named instances, preview restricted VF groups, download.
 
 import { useState, useCallback, useRef, useEffect, useMemo } from 'react'
-import type { AxisDefinition, FontInstance } from 'vf-clamp'
+import type { AxisDefinition, FontInstance, OutputFormat } from 'vf-clamp'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -33,11 +33,24 @@ function toBase64(buf: Uint8Array<ArrayBuffer>): string {
 	return btoa(binary)
 }
 
+const FORMAT_MIME: Record<OutputFormat, string> = {
+	ttf:   'font/ttf',
+	woff:  'font/woff',
+	woff2: 'font/woff2',
+}
+
+const FORMAT_EXT: Record<OutputFormat, string> = {
+	ttf:   'ttf',
+	woff:  'woff',
+	woff2: 'woff2',
+}
+
 /** Generate a vf-clamp npm code snippet from the current groups. */
-function generateCode(groups: InstanceGroup[], fontName: string): string {
+function generateCode(groups: InstanceGroup[], fontName: string, format: OutputFormat): string {
 	if (!groups.length) return ''
 
 	const safe = fontName.replace(/\s+/g, '-') || 'MyFont-VF'
+	const ext  = FORMAT_EXT[format]
 
 	const subLines = groups.flatMap((group) => {
 		const first = group.instances[0]
@@ -58,6 +71,8 @@ function generateCode(groups: InstanceGroup[], fontName: string): string {
 		]
 	})
 
+	const formatLine = format !== 'ttf' ? [`  format: '${format}',`] : []
+
 	return [
 		`import { clampFont } from 'vf-clamp'`,
 		`import { readFile, writeFile } from 'fs/promises'`,
@@ -65,13 +80,14 @@ function generateCode(groups: InstanceGroup[], fontName: string): string {
 		`const source = await readFile('${safe}.ttf')`,
 		``,
 		`const results = await clampFont(source, {`,
+		...formatLine,
 		`  subfamilies: [`,
 		...subLines,
 		`  ],`,
 		`})`,
 		``,
 		`for (const result of results) {`,
-		`  await writeFile(\`${safe}-\${result.name}.ttf\`, result.buffer)`,
+		`  await writeFile(\`${safe}-\${result.name}-VF.${ext}\`, result.buffer)`,
 		`}`,
 	].join('\n')
 }
@@ -97,7 +113,7 @@ function longestCommonPrefix(strings: string[]): string {
 function groupBySubfamily(
 	instances: FontInstance[],
 	axes: AxisDefinition[],
-): Array<{ label: string; key: string; axisTag: string | null; instances: FontInstance[] }> {
+): Array<{ label: string; axisValue: number; hasNamePrefix: boolean; key: string; axisTag: string | null; instances: FontInstance[] }> {
 	const candidates = axes
 		.filter((ax) => !SUBFAMILY_EXCLUDE.has(ax.tag))
 		.map((ax) => {
@@ -110,7 +126,7 @@ function groupBySubfamily(
 		.sort((a, b) => a.vals.length - b.vals.length)
 
 	if (!candidates.length) {
-		return [{ label: '', key: 'all', axisTag: null, instances }]
+		return [{ label: '', axisValue: 0, hasNamePrefix: false, key: 'all', axisTag: null, instances }]
 	}
 
 	const { ax: groupAxis, vals } = candidates[0]
@@ -122,6 +138,8 @@ function groupBySubfamily(
 		const prefix = longestCommonPrefix(members.map((i) => i.name)).trim()
 		return {
 			label: prefix || `${groupAxis.tag} ${val}`,
+			axisValue: val,
+			hasNamePrefix: prefix.length > 0,
 			key: `${groupAxis.tag}-${val}`,
 			axisTag: groupAxis.tag,
 			instances: members,
@@ -315,6 +333,7 @@ export default function Demo() {
 	const [showCode, setShowCode]               = useState(false)
 	const [showAdvanced, setShowAdvanced]       = useState(false)
 	const [axisOverrides, setAxisOverrides]     = useState<Record<string, { min: number; max: number }>>({})
+	const [outputFormat, setOutputFormat]       = useState<OutputFormat>('ttf')
 
 	const isLoadingRef       = useRef(false)
 	const containerRef       = useRef<HTMLDivElement>(null)
@@ -510,7 +529,7 @@ export default function Demo() {
 			const res = await fetch('/api/demo/clamp', {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({ font: toBase64(fontBuffer), subfamilies: configs }),
+				body: JSON.stringify({ font: toBase64(fontBuffer), subfamilies: configs, format: outputFormat }),
 			})
 			const json = await res.json()
 			if (!res.ok) throw new Error(json.error ?? `HTTP ${res.status}`)
@@ -519,12 +538,13 @@ export default function Demo() {
 			setProcessingStage(3)
 
 			for (const result of json.results) {
+				const fmt  = (result.format ?? outputFormat) as OutputFormat
 				const bytes = Uint8Array.from(atob(result.data), (c) => c.charCodeAt(0))
-				const blob  = new Blob([bytes], { type: 'font/ttf' })
+				const blob  = new Blob([bytes], { type: FORMAT_MIME[fmt] })
 				const url   = URL.createObjectURL(blob)
 				const a     = document.createElement('a')
 				a.href = url
-				a.download = `${result.name}-VF.ttf`
+				a.download = `${result.name}-VF.${FORMAT_EXT[fmt]}`
 				a.click()
 				URL.revokeObjectURL(url)
 			}
@@ -586,7 +606,7 @@ export default function Demo() {
 					)}
 				</div>
 				<label className="text-xs px-3 py-1.5 rounded-full border border-white/20 cursor-pointer hover:bg-white/5 transition-colors shrink-0">
-					{loadState === 'ready' ? 'Swap font' : 'Browse TTF / WOFF2'}
+					{loadState === 'ready' ? 'Swap font' : 'Browse font'}
 					<input
 						type="file"
 						accept={ACCEPT}
@@ -604,28 +624,24 @@ export default function Demo() {
 						Named instances — adjacent selections merge into one output file
 					</p>
 
-					{subfamilyGroups.map((group) => {
-						// Strip the shared subfamily prefix from button labels
-						const prefixLen = group.label && !group.label.includes(' ')
-							? group.label.length + 1  // "Condensed " → strip "Condensed "
-							: 0
-
-						return (
-							<div key={group.key} className="flex flex-col gap-2">
-								{group.label && (
-									<p className="text-[10px] font-mono opacity-30 uppercase tracking-widest">
-										{group.label}
-									</p>
-								)}
-								<div className="flex flex-wrap gap-2">
-									{group.instances.map((inst) => {
+					{subfamilyGroups.map((group) => (
+						<div key={group.key} className="flex flex-col gap-2">
+							{group.label && (
+								<p className="text-[10px] font-mono opacity-30 uppercase tracking-widest">
+									{group.label}
+									{group.hasNamePrefix && (
+										<span className="opacity-50 normal-case tracking-normal ml-1.5">
+											({group.axisValue})
+										</span>
+									)}
+								</p>
+							)}
+							<div className="flex flex-wrap gap-2">
+								{group.instances.map((inst) => {
 										const isSelected = selected.has(inst.name)
 										const isIsolated = isSelected && isolatedInstances.has(inst.name)
-										const displayName = prefixLen && inst.name.startsWith(group.label + ' ')
-											? inst.name.slice(prefixLen)
-											: inst.name
 
-										// Show only non-group-axis coordinates in the button
+										// Show only non-group-axis coordinates in the button subtitle
 										const coordEntries = Object.entries(inst.coordinates).filter(
 											([k]) => k !== group.axisTag,
 										)
@@ -645,7 +661,7 @@ export default function Demo() {
 															: 'border-white/10 opacity-50 hover:opacity-80 hover:border-white/25',
 													].join(' ')}
 												>
-													<span className="text-xs font-mono">{displayName}</span>
+													<span className="text-xs font-mono">{inst.name}</span>
 													{coordEntries.length > 0 && (
 														<span className="text-[10px] opacity-40 font-mono">
 															{coordEntries.map(([k, v]) => `${k} ${v}`).join(' ')}
@@ -664,7 +680,7 @@ export default function Demo() {
 								</div>
 							</div>
 						)
-					})}
+					)}
 
 					{selected.size > 0 && (
 						<button
@@ -826,7 +842,7 @@ export default function Demo() {
 						</button>
 						{showCode && (
 							<pre className="bg-white/5 rounded-xl p-4 overflow-x-auto text-xs leading-relaxed font-mono opacity-75 whitespace-pre">
-								<code>{generateCode(groups, fontName)}</code>
+								<code>{generateCode(groups, fontName, outputFormat)}</code>
 							</pre>
 						)}
 					</div>
@@ -836,15 +852,36 @@ export default function Demo() {
 						{processError && (
 							<p className="text-xs text-red-400">{processError}</p>
 						)}
-						<button
-							onClick={handleDownload}
-							disabled={processing}
-							className="self-start text-sm px-5 py-2.5 rounded-full border border-white/20 hover:bg-white/5 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-						>
-							{processing
-								? STAGE_LABELS[processingStage]
-								: `Download ${groups.length === 1 ? '1 restricted VF' : `${groups.length} restricted VFs`}`}
-						</button>
+						<div className="flex flex-wrap items-center gap-3">
+							<button
+								onClick={handleDownload}
+								disabled={processing}
+								className="text-sm px-5 py-2.5 rounded-full border border-white/20 hover:bg-white/5 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+							>
+								{processing
+									? STAGE_LABELS[processingStage]
+									: `Download ${groups.length === 1 ? '1 restricted VF' : `${groups.length} restricted VFs`}`}
+							</button>
+							{/* Format selector */}
+							{!processing && (
+								<div className="flex items-center rounded-full border border-white/15 overflow-hidden text-xs">
+									{(['ttf', 'woff', 'woff2'] as OutputFormat[]).map((fmt) => (
+										<button
+											key={fmt}
+											onClick={() => setOutputFormat(fmt)}
+											className={[
+												'px-3 py-1.5 font-mono transition-colors',
+												outputFormat === fmt
+													? 'bg-white/10 opacity-100'
+													: 'opacity-30 hover:opacity-60',
+											].join(' ')}
+										>
+											{fmt}
+										</button>
+									))}
+								</div>
+							)}
+						</div>
 						{processing && (
 							<div className="flex flex-col gap-1.5">
 								<div className="h-0.5 bg-white/10 rounded-full overflow-hidden w-full max-w-xs">

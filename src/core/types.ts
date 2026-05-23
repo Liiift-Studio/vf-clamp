@@ -37,12 +37,19 @@ export interface SubfamilyConfig {
 export interface ClampOptions {
 	/** One entry per restricted variant to produce */
 	subfamilies: SubfamilyConfig[]
-	/** Output format — defaults to 'ttf'; 'woff2' compresses using fonttools + Brotli */
+	/**
+	 * Output format — defaults to the input format (TTF→TTF, OTF→OTF, WOFF→WOFF, WOFF2→WOFF2).
+	 * Specify explicitly to transcode: e.g. pass 'woff2' to compress any input to WOFF2.
+	 */
 	format?: OutputFormat
 }
 
-/** Output format for clampFont() — TTF is the default; WOFF2 is compressed */
-export type OutputFormat = 'ttf' | 'woff2'
+/**
+ * Output format for clampFont() — TTF is the default.
+ * WOFF and WOFF2 transcode the output to web-compressed flavours.
+ * OTF input is preserved as-is when format is omitted or 'ttf'.
+ */
+export type OutputFormat = 'ttf' | 'woff' | 'woff2'
 
 /** One output from clampFont() — a restricted variable font for a single subfamily */
 export interface ClampResult {
@@ -50,7 +57,7 @@ export interface ClampResult {
 	name: string
 	/** Restricted font binary — write to disk or upload; format matches options.format */
 	buffer: Uint8Array
-	/** Format of the buffer — 'ttf' by default, 'woff2' if requested */
+	/** Format of the buffer — matches options.format, defaults to the input format */
 	format: OutputFormat
 }
 

@@ -1,7 +1,7 @@
 // src/core/clamp.ts — clampFont() implementation wrapping @web-alchemy/fonttools
 import { instantiateVariableFont } from '@web-alchemy/fonttools'
 import type { AxisValue, ClampOptions, ClampResult, OutputFormat } from './types.js'
-import { convertToWoff2 } from './convert.js'
+import { convertToWoff, convertToWoff2 } from './convert.js'
 
 /** Convert a vf-clamp AxisValue to the format expected by @web-alchemy/fonttools */
 function toInstancerValue(value: AxisValue): number | [number, number] | null {
@@ -47,6 +47,8 @@ export async function clampFont(
 
 		if (format === 'woff2') {
 			buffer = await convertToWoff2(buffer)
+		} else if (format === 'woff') {
+			buffer = await convertToWoff(buffer)
 		}
 
 		results.push({ name: subfamily.name, buffer, format })
