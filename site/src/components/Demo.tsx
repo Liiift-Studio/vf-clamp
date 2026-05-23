@@ -154,9 +154,18 @@ function primaryAxis(axes: AxisDefinition[]): AxisDefinition | null {
 }
 
 /**
- * Group selected instances into contiguous runs along the primary axis.
- * Two selected instances belong to the same run only when no unselected
- * instance sits between them in primary-axis sort order.
+ * Group selected instances into output VFs.
+ *
+ * Strategy: first attempt to combine ALL selected instances into one group by
+ * computing their global bounding-box hull. If no unselected instance falls
+ * strictly inside that hull ("global collateral"), one output VF covers every
+ * selection — e.g. Condensed Thin + SemiCondensed Thin collapse into a single
+ * wdth-variable font because no instance sits between wdth 75 and 87.5.
+ *
+ * If global collateral exists, fall back to the adjacency algorithm: sort
+ * instances by secondary axes then the primary (widest-range) axis and build
+ * contiguous runs of selected instances, splitting whenever an unselected
+ * instance interrupts the sequence.
  */
 function computeGroups(
 	instances: FontInstance[],
@@ -168,9 +177,35 @@ function computeGroups(
 	const primary = primaryAxis(axes)
 	if (!primary) return []
 
+	const selectedInstances = instances.filter((i) => selected.has(i.name))
+
+	// ── Step 1: global hull of all selected instances ────────────────────────
+	const globalHull: Record<string, { min: number; max: number }> = {}
+	for (const axis of axes) {
+		const vals = selectedInstances.map((i) => i.coordinates[axis.tag] ?? axis.default)
+		globalHull[axis.tag] = { min: Math.min(...vals), max: Math.max(...vals) }
+	}
+
+	// ── Step 2: unselected instances inside the global hull ──────────────────
+	const globalCollateral = instances.filter((inst) => {
+		if (selected.has(inst.name)) return false
+		return axes.every((axis) => {
+			const v = inst.coordinates[axis.tag] ?? axis.default
+			const r = globalHull[axis.tag]
+			// strictly inside: touches the boundary is acceptable (it won't
+			// add design-space the selection already covers)
+			return v >= r.min && v <= r.max
+		})
+	})
+
+	// ── Step 3: no collateral → one group covers everything ──────────────────
+	if (globalCollateral.length === 0) {
+		return [{ instances: selectedInstances, axisRanges: globalHull, collateral: [] }]
+	}
+
+	// ── Step 4: collateral exists → adjacency fallback ───────────────────────
+
 	// Secondary axes sorted by number of distinct instance values descending.
-	// More-varied axes group instances more meaningfully; axes where every
-	// instance shares the same value (free axes) contribute nothing and sort last.
 	const secondaryAxes = axes
 		.filter((ax) => ax.tag !== primary.tag)
 		.sort((ax1, ax2) => {
@@ -179,9 +214,7 @@ function computeGroups(
 			return d2 - d1
 		})
 
-	// Sort by secondary axes first so instances sharing the same non-primary
-	// coordinates are contiguous — e.g. all SemiExpanded instances stay together
-	// before ordering by wght, enabling correct adjacent-run detection.
+	// Sort by secondary axes first, then primary.
 	const sorted = [...instances].sort((a, b) => {
 		for (const axis of secondaryAxes) {
 			const av = a.coordinates[axis.tag] ?? axis.default
@@ -192,7 +225,7 @@ function computeGroups(
 			(b.coordinates[primary.tag] ?? primary.default)
 	})
 
-	// Build runs of consecutive selected instances
+	// Build runs of consecutive selected instances.
 	const runs: FontInstance[][] = []
 	let current: FontInstance[] = []
 	for (const inst of sorted) {
@@ -205,7 +238,7 @@ function computeGroups(
 	}
 	if (current.length) runs.push(current)
 
-	// Per run: compute hull and find collateral (unselected instances inside hull)
+	// Per run: compute hull and find collateral.
 	return runs.map((run) => {
 		const axisRanges: Record<string, { min: number; max: number }> = {}
 		for (const axis of axes) {

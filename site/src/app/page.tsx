@@ -1,5 +1,6 @@
 // vfClamp landing page — hero, demo, how it works, usage, WOFF2, REST API
 import CodeBlock from "../components/CodeBlock"
+import CopyInstall from "../components/CopyInstall"
 import SiteFooter from "../components/SiteFooter"
 import Demo from "../components/Demo"
 import { version } from "../../../package.json"
@@ -19,9 +20,7 @@ export default function Home() {
 					</h1>
 				</div>
 				<div className="flex items-center gap-4">
-					<code className="text-sm font-mono bg-white/5 px-3 py-1.5 rounded opacity-80">
-						npm install vf-clamp
-					</code>
+					<CopyInstall />
 					<a
 						href="https://github.com/Liiift-Studio/vf-clamp"
 						target="_blank"
