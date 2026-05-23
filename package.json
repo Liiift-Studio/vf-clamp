@@ -42,8 +42,11 @@
 		"vf-clamp",
 		"fonttools",
 		"instancer",
+		"named-instances",
 		"axis",
 		"design-space",
+		"pyodide",
+		"wasm",
 		"woff2",
 		"ttf",
 		"opentype"

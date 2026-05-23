@@ -12,11 +12,11 @@ const inter = Inter({
 export const metadata: Metadata = {
 	title: "vf-clamp — Restrict variable font axis ranges",
 	icons: { icon: "/icon.svg", shortcut: "/icon.svg", apple: "/icon.svg" },
-	description: "Clamp a variable font's design space to specific axis ranges per subfamily. Like CSS clamp() for type design.",
-	keywords: ["variable font", "vf-clamp", "font instancer", "axis range", "typography", "npm", "fonttools", "woff2"],
+	description: "Select named instances, preview the restricted design space, and download clamped variable fonts. Powered by fonttools varLib.instancer via Pyodide WASM — no Python required.",
+	keywords: ["variable font", "vf-clamp", "font instancer", "axis range", "named instances", "typography", "npm", "fonttools", "pyodide", "wasm", "woff2", "design space"],
 	openGraph: {
 		title: "vf-clamp — Restrict variable font axis ranges",
-		description: "Clamp a variable font's design space to specific axis ranges per subfamily. Like CSS clamp() for type design.",
+		description: "Select named instances, preview the restricted design space, and download clamped variable fonts. Powered by fonttools via Pyodide WASM.",
 		url: "https://vfclamp.com",
 		siteName: "vf-clamp",
 		type: "website",
@@ -24,7 +24,7 @@ export const metadata: Metadata = {
 	twitter: {
 		card: "summary_large_image",
 		title: "vf-clamp — Restrict variable font axis ranges",
-		description: "Clamp a variable font's design space to specific axis ranges. Like CSS clamp() for type.",
+		description: "Select named instances, preview the restricted design space, and download clamped variable fonts.",
 	},
 	metadataBase: new URL("https://vfclamp.com"),
 }

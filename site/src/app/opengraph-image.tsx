@@ -3,7 +3,7 @@ import { ImageResponse } from 'next/og'
 import { readFile } from 'node:fs/promises'
 import { join } from 'node:path'
 
-export const alt = 'vf-clamp — Restrict a variable font\'s axis ranges to a specific subfamily scope'
+export const alt = 'vf-clamp — Select named instances, restrict variable font axis ranges, download clamped VF files'
 export const size = { width: 1200, height: 630 }
 export const contentType = 'image/png'
 
