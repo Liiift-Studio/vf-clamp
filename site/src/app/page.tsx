@@ -79,9 +79,9 @@ export default function Home() {
 							Run <code className="font-mono">vf-clamp</code> from any shell. Pass a font file, a JSON config, and get clamped outputs written to disk. Scriptable and CI-friendly.
 						</p>
 						<code className="text-xs font-mono opacity-40">npx @liiift-studio/vf-clamp-cli</code>
-						<div className="flex items-center gap-4 mt-auto pt-2 border-t border-white/10">
-							<a href="https://github.com/Liiift-Studio/vf-clamp-cli" target="_blank" rel="noopener noreferrer" className="text-xs opacity-60 hover:opacity-100 transition-opacity">GitHub ↗</a>
-							<a href="https://www.npmjs.com/package/@liiift-studio/vf-clamp-cli" target="_blank" rel="noopener noreferrer" className="text-xs opacity-60 hover:opacity-100 transition-opacity">npm ↗</a>
+						<div className="flex items-center gap-2 mt-auto pt-3">
+							<a href="https://www.npmjs.com/package/@liiift-studio/vf-clamp-cli" target="_blank" rel="noopener noreferrer" className="flex-1 text-center text-xs font-medium py-2 px-3 rounded-lg bg-white/10 hover:bg-white/15 transition-colors">npm ↗</a>
+							<a href="https://github.com/Liiift-Studio/vf-clamp-cli" target="_blank" rel="noopener noreferrer" className="flex-1 text-center text-xs py-2 px-3 rounded-lg border border-white/15 hover:border-white/30 hover:bg-white/5 transition-colors opacity-70 hover:opacity-100">GitHub ↗</a>
 						</div>
 					</div>
 
@@ -99,9 +99,9 @@ export default function Home() {
 							Native Glyphs plugin. Select named instances from your open font, choose a format, and export restricted VFs — all without leaving the app.
 						</p>
 						<code className="text-xs font-mono opacity-40">vf-clamp-glyphs.glyphsPlugin</code>
-						<div className="flex items-center gap-4 mt-auto pt-2 border-t border-white/10">
-							<a href="https://github.com/Liiift-Studio/vf-clamp-glyphs" target="_blank" rel="noopener noreferrer" className="text-xs opacity-60 hover:opacity-100 transition-opacity">GitHub ↗</a>
-							<a href="https://github.com/Liiift-Studio/vf-clamp-glyphs/releases/latest" target="_blank" rel="noopener noreferrer" className="text-xs opacity-60 hover:opacity-100 transition-opacity">Download ↗</a>
+						<div className="flex items-center gap-2 mt-auto pt-3">
+							<a href="https://github.com/Liiift-Studio/vf-clamp-glyphs/releases/latest/download/vf-clamp-glyphs.zip" target="_blank" rel="noopener noreferrer" className="flex-1 text-center text-xs font-medium py-2 px-3 rounded-lg bg-white/10 hover:bg-white/15 transition-colors">Download ↗</a>
+							<a href="https://github.com/Liiift-Studio/vf-clamp-glyphs" target="_blank" rel="noopener noreferrer" className="flex-1 text-center text-xs py-2 px-3 rounded-lg border border-white/15 hover:border-white/30 hover:bg-white/5 transition-colors opacity-70 hover:opacity-100">GitHub ↗</a>
 						</div>
 					</div>
 
@@ -119,9 +119,9 @@ export default function Home() {
 							RoboFont extension using fonttools directly. Pick instances from any open UFO-based variable font and export clamped outputs from the Extensions menu.
 						</p>
 						<code className="text-xs font-mono opacity-40">vf-clamp.roboFontExt</code>
-						<div className="flex items-center gap-4 mt-auto pt-2 border-t border-white/10">
-							<a href="https://github.com/Liiift-Studio/vf-clamp-robofont" target="_blank" rel="noopener noreferrer" className="text-xs opacity-60 hover:opacity-100 transition-opacity">GitHub ↗</a>
-							<a href="https://github.com/Liiift-Studio/vf-clamp-robofont/releases/latest" target="_blank" rel="noopener noreferrer" className="text-xs opacity-60 hover:opacity-100 transition-opacity">Download ↗</a>
+						<div className="flex items-center gap-2 mt-auto pt-3">
+							<a href="https://github.com/Liiift-Studio/vf-clamp-robofont/releases/latest/download/vf-clamp-robofont.zip" target="_blank" rel="noopener noreferrer" className="flex-1 text-center text-xs font-medium py-2 px-3 rounded-lg bg-white/10 hover:bg-white/15 transition-colors">Download ↗</a>
+							<a href="https://github.com/Liiift-Studio/vf-clamp-robofont" target="_blank" rel="noopener noreferrer" className="flex-1 text-center text-xs py-2 px-3 rounded-lg border border-white/15 hover:border-white/30 hover:bg-white/5 transition-colors opacity-70 hover:opacity-100">GitHub ↗</a>
 						</div>
 					</div>
 
@@ -138,9 +138,9 @@ export default function Home() {
 							Right-click any <code className="font-mono">.ttf</code> in the Explorer to open the vf-clamp panel. Select instances, preview the axis hull, and export — without leaving your editor.
 						</p>
 						<code className="text-xs font-mono opacity-40">vf-clamp.vscode-extension</code>
-						<div className="flex items-center gap-4 mt-auto pt-2 border-t border-white/10">
-							<a href="https://github.com/Liiift-Studio/vf-clamp-vscode" target="_blank" rel="noopener noreferrer" className="text-xs opacity-60 hover:opacity-100 transition-opacity">GitHub ↗</a>
-							<a href="https://github.com/Liiift-Studio/vf-clamp-vscode/releases/latest" target="_blank" rel="noopener noreferrer" className="text-xs opacity-60 hover:opacity-100 transition-opacity">Download ↗</a>
+						<div className="flex items-center gap-2 mt-auto pt-3">
+							<a href="https://github.com/Liiift-Studio/vf-clamp-vscode/releases/latest/download/vf-clamp.vsix" target="_blank" rel="noopener noreferrer" className="flex-1 text-center text-xs font-medium py-2 px-3 rounded-lg bg-white/10 hover:bg-white/15 transition-colors">Download .vsix ↗</a>
+							<a href="https://github.com/Liiift-Studio/vf-clamp-vscode" target="_blank" rel="noopener noreferrer" className="flex-1 text-center text-xs py-2 px-3 rounded-lg border border-white/15 hover:border-white/30 hover:bg-white/5 transition-colors opacity-70 hover:opacity-100">GitHub ↗</a>
 						</div>
 					</div>
 
