@@ -431,33 +431,44 @@ function TextPreview({
 	}, [axes, axisRanges])
 
 	return (
-		<div className="relative group/preview">
-			{editing ? (
-				<textarea
-					// eslint-disable-next-line jsx-a11y/no-autofocus
-					autoFocus
-					value={customText}
-					onChange={(e) => setCustomText(e.target.value)}
-					placeholder="Type here…"
-					rows={2}
-					style={{ fontFamily: '"vf-demo", sans-serif', fontVariationSettings: midpointSettings, resize: 'none' }}
-					className="w-full bg-transparent text-4xl leading-tight opacity-90 placeholder:opacity-20 focus:outline-none"
-				/>
-			) : (
-				<p
-					style={{ fontFamily: '"vf-demo", sans-serif', fontVariationSettings: variationSettings }}
-					className="text-4xl leading-tight opacity-90 select-none overflow-hidden"
-					aria-hidden="true"
-				>
-					{customText || 'Aa Bb 012'}
-				</p>
-			)}
+		<div className="flex items-start gap-3 group/preview">
+			<div className="flex-1 min-w-0">
+				{editing ? (
+					<textarea
+						// eslint-disable-next-line jsx-a11y/no-autofocus
+						autoFocus
+						value={customText}
+						onChange={(e) => setCustomText(e.target.value)}
+						placeholder="Type here…"
+						rows={2}
+						style={{ fontFamily: '"vf-demo", sans-serif', fontVariationSettings: midpointSettings, resize: 'none' }}
+						className="w-full bg-transparent text-4xl leading-tight opacity-90 placeholder:opacity-20 focus:outline-none"
+					/>
+				) : (
+					<p
+						style={{ fontFamily: '"vf-demo", sans-serif', fontVariationSettings: variationSettings }}
+						className="text-4xl leading-tight opacity-90 select-none overflow-hidden"
+						aria-hidden="true"
+					>
+						{customText || 'Aa Bb 012'}
+					</p>
+				)}
+			</div>
 			<button
 				onClick={() => setEditing((v) => !v)}
 				aria-label={editing ? 'Finish editing preview text' : 'Edit preview text'}
-				className="absolute top-0 right-0 text-[10px] opacity-0 group-hover/preview:opacity-30 hover:!opacity-60 transition-opacity"
+				className="shrink-0 mt-2 p-1.5 rounded opacity-25 group-hover/preview:opacity-60 hover:!opacity-100 hover:bg-white/10 transition-all"
 			>
-				{editing ? 'done' : 'edit'}
+				{editing ? (
+					<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+						<polyline points="20 6 9 17 4 12" />
+					</svg>
+				) : (
+					<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+						<path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+						<path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+					</svg>
+				)}
 			</button>
 		</div>
 	)
