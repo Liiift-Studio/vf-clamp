@@ -140,7 +140,7 @@ function generateCode(groups: InstanceGroup[], fontName: string, format: OutputF
 		`})`,
 		``,
 		`for (const result of results) {`,
-		`  await writeFile(\`\${result.name} VF.${ext}\`, result.buffer)`,
+		`  await writeFile(\`\${result.name}.${ext}\`, result.buffer)`,
 		`}`,
 	].join('\n')
 }
@@ -158,28 +158,37 @@ function longestCommonPrefix(strings: string[]): string {
 }
 
 /**
- * Compact two endpoint instance names into a shared-prefix form.
- * "Encode Sans Light" + "Encode Sans Bold" → "Encode Sans Light-Bold"
- * Falls back to "First–Last" if there is no shared word-level prefix.
+ * Compact two endpoint instance names using shared word-level prefix and/or suffix.
+ *   "Encode Sans Light" + "Encode Sans Bold"       → "Encode Sans Light-Bold"
+ *   "Condensed Light"   + "SemiCondensed Light"    → "Condensed-SemiCondensed Light"
+ *   "Condensed Thin"    + "Condensed Black"        → "Condensed Thin-Black"
+ * Falls back to "First–Last" when names share no words.
  */
 function compactName(first: string, last: string): string {
 	if (first === last) return first
-	let prefix = ''
-	const minLen = Math.min(first.length, last.length)
-	for (let i = 0; i < minLen; i++) {
-		if (first[i] === last[i]) prefix += first[i]
-		else break
-	}
-	const lastSpace = prefix.lastIndexOf(' ')
-	prefix = lastSpace >= 0 ? prefix.slice(0, lastSpace + 1) : ''
-	if (!prefix) return `${first}–${last}`
-	const a = first.slice(prefix.length).trim()
-	const b = last.slice(prefix.length).trim()
-	const base = prefix.trim()
-	if (!a && !b) return base
-	if (!a) return `${base} ${b}`
-	if (!b) return `${base} ${a}`
-	return `${base} ${a}-${b}`
+	const fw = first.split(' ')
+	const lw = last.split(' ')
+
+	// Common leading words
+	let prefixLen = 0
+	while (prefixLen < fw.length && prefixLen < lw.length && fw[prefixLen] === lw[prefixLen]) prefixLen++
+
+	// Common trailing words (not overlapping the prefix)
+	let suffixLen = 0
+	while (
+		suffixLen < fw.length - prefixLen &&
+		suffixLen < lw.length - prefixLen &&
+		fw[fw.length - 1 - suffixLen] === lw[lw.length - 1 - suffixLen]
+	) suffixLen++
+
+	const prefix = fw.slice(0, prefixLen).join(' ')
+	const suffix = suffixLen > 0 ? fw.slice(fw.length - suffixLen).join(' ') : ''
+	const a      = fw.slice(prefixLen, fw.length - (suffixLen || 0)).join(' ')
+	const b      = lw.slice(prefixLen, lw.length - (suffixLen || 0)).join(' ')
+
+	if (!a && !b) return [prefix, suffix].filter(Boolean).join(' ') || `${first}–${last}`
+	const middle = a && b ? `${a}-${b}` : (a || b)
+	return [prefix, middle, suffix].filter(Boolean).join(' ')
 }
 
 /**
@@ -234,18 +243,16 @@ function primaryAxis(axes: AxisDefinition[]): AxisDefinition | null {
 }
 
 /**
- * Group selected instances into output VFs.
+ * Group selected instances into output fonts.
  *
- * Strategy: first attempt to combine ALL selected instances into one group by
- * computing their global bounding-box hull. If no unselected instance falls
- * strictly inside that hull ("global collateral"), one output VF covers every
- * selection — e.g. Condensed Thin + SemiCondensed Thin collapse into a single
- * wdth-variable font because no instance sits between wdth 75 and 87.5.
- *
- * If global collateral exists, fall back to the adjacency algorithm: sort
- * instances by secondary axes then the primary (widest-range) axis and build
- * contiguous runs of selected instances, splitting whenever an unselected
- * instance interrupts the sequence.
+ * Strategy: greedy pairwise hull-merging.
+ * 1. Try the global hull first — if all selected instances together have no
+ *    unselected collateral, return one group.
+ * 2. Otherwise start with one group per instance, then repeatedly merge any
+ *    two groups whose combined hull contains no unselected instances. This
+ *    handles cross-width same-weight pairs that the old linear-adjacency
+ *    algorithm incorrectly split apart.
+ * 3. Groups are sorted by their primary-axis range minimum for stable output.
  */
 function computeGroups(
 	instances: FontInstance[],
@@ -259,33 +266,60 @@ function computeGroups(
 
 	const selectedInstances = instances.filter((i) => selected.has(i.name))
 
-	// ── Step 1: global hull of all selected instances ────────────────────────
-	const globalHull: Record<string, { min: number; max: number }> = {}
-	for (const axis of axes) {
-		const vals = selectedInstances.map((i) => i.coordinates[axis.tag] ?? axis.default)
-		globalHull[axis.tag] = { min: Math.min(...vals), max: Math.max(...vals) }
+	// Inner helpers so we don't repeat the hull/collateral logic.
+	function makeHull(group: FontInstance[]): Record<string, { min: number; max: number }> {
+		const h: Record<string, { min: number; max: number }> = {}
+		for (const axis of axes) {
+			const vals = group.map((i) => i.coordinates[axis.tag] ?? axis.default)
+			h[axis.tag] = { min: Math.min(...vals), max: Math.max(...vals) }
+		}
+		return h
 	}
 
-	// ── Step 2: unselected instances inside the global hull ──────────────────
-	const globalCollateral = instances.filter((inst) => {
-		if (selected.has(inst.name)) return false
-		return axes.every((axis) => {
-			const v = inst.coordinates[axis.tag] ?? axis.default
-			const r = globalHull[axis.tag]
-			// strictly inside: touches the boundary is acceptable (it won't
-			// add design-space the selection already covers)
-			return v >= r.min && v <= r.max
-		})
-	})
+	function hullCollateral(h: Record<string, { min: number; max: number }>): string[] {
+		return instances
+			.filter((inst) => {
+				if (selected.has(inst.name)) return false
+				return axes.every((axis) => {
+					const v = inst.coordinates[axis.tag] ?? axis.default
+					const r = h[axis.tag]
+					return v >= r.min && v <= r.max
+				})
+			})
+			.map((i) => i.name)
+	}
 
-	// ── Step 3: no collateral → one group covers everything ──────────────────
-	if (globalCollateral.length === 0) {
+	// ── Step 1: try one group for everything ────────────────────────────────
+	const globalHull = makeHull(selectedInstances)
+	if (hullCollateral(globalHull).length === 0) {
 		return [{ instances: selectedInstances, axisRanges: globalHull, collateral: [] }]
 	}
 
-	// ── Step 4: collateral exists → adjacency fallback ───────────────────────
+	// ── Step 2: greedy pairwise merging ─────────────────────────────────────
+	type Bucket = { insts: FontInstance[]; h: Record<string, { min: number; max: number }> }
+	const buckets: Bucket[] = selectedInstances.map((inst) => ({
+		insts: [inst],
+		h: makeHull([inst]),
+	}))
 
-	// Secondary axes sorted by number of distinct instance values descending.
+	let merged = true
+	while (merged) {
+		merged = false
+		outer: for (let i = 0; i < buckets.length; i++) {
+			for (let j = i + 1; j < buckets.length; j++) {
+				const combined = [...buckets[i].insts, ...buckets[j].insts]
+				const combinedHull = makeHull(combined)
+				if (hullCollateral(combinedHull).length === 0) {
+					buckets[i] = { insts: combined, h: combinedHull }
+					buckets.splice(j, 1)
+					merged = true
+					break outer
+				}
+			}
+		}
+	}
+
+	// ── Step 3: sort instances within each bucket, then sort buckets ─────────
 	const secondaryAxes = axes
 		.filter((ax) => ax.tag !== primary.tag)
 		.sort((ax1, ax2) => {
@@ -294,51 +328,43 @@ function computeGroups(
 			return d2 - d1
 		})
 
-	// Sort by secondary axes first, then primary.
-	const sorted = [...instances].sort((a, b) => {
-		for (const axis of secondaryAxes) {
-			const av = a.coordinates[axis.tag] ?? axis.default
-			const bv = b.coordinates[axis.tag] ?? axis.default
-			if (av !== bv) return av - bv
-		}
-		return (a.coordinates[primary.tag] ?? primary.default) -
-			(b.coordinates[primary.tag] ?? primary.default)
-	})
+	const primaryTag = primary.tag
 
-	// Build runs of consecutive selected instances.
-	const runs: FontInstance[][] = []
-	let current: FontInstance[] = []
-	for (const inst of sorted) {
-		if (selected.has(inst.name)) {
-			current.push(inst)
-		} else if (current.length) {
-			runs.push(current)
-			current = []
-		}
+	function sortInsts(insts: FontInstance[]): FontInstance[] {
+		return [...insts].sort((a, b) => {
+			for (const axis of secondaryAxes) {
+				const av = a.coordinates[axis.tag] ?? axis.default
+				const bv = b.coordinates[axis.tag] ?? axis.default
+				if (av !== bv) return av - bv
+			}
+			return (a.coordinates[primaryTag] ?? primary!.default) - (b.coordinates[primaryTag] ?? primary!.default)
+		})
 	}
-	if (current.length) runs.push(current)
 
-	// Per run: compute hull and find collateral.
-	return runs.map((run) => {
-		const axisRanges: Record<string, { min: number; max: number }> = {}
-		for (const axis of axes) {
-			const vals = run.map((i) => i.coordinates[axis.tag] ?? axis.default)
-			axisRanges[axis.tag] = { min: Math.min(...vals), max: Math.max(...vals) }
-		}
+	buckets.sort((ga, gb) => ga.h[primaryTag].min - gb.h[primaryTag].min)
 
-		const collateral = instances
-			.filter((inst) => {
-				if (selected.has(inst.name)) return false
-				return axes.every((axis) => {
-					const v = inst.coordinates[axis.tag] ?? axis.default
-					const r = axisRanges[axis.tag]
-					return v >= r.min && v <= r.max
-				})
-			})
-			.map((i) => i.name)
-
-		return { instances: run, axisRanges, collateral }
+	return buckets.map((bucket) => {
+		const sorted = sortInsts(bucket.insts)
+		return { instances: sorted, axisRanges: bucket.h, collateral: hullCollateral(bucket.h) }
 	})
+}
+
+// ── Helpers used in render ────────────────────────────────────────────────────
+
+/** True if the group's output font is actually variable (at least one axis has a non-zero range). */
+function groupIsVariable(group: InstanceGroup, axes: AxisDefinition[]): boolean {
+	return axes.some((axis) => {
+		const r = group.axisRanges[axis.tag]
+		return r !== undefined && r.min < r.max
+	})
+}
+
+/** Filename stem + extension for a group, omitting "VF" for pinned (non-variable) outputs. */
+function groupFilename(group: InstanceGroup, axes: AxisDefinition[], ext: string): string {
+	const first = group.instances[0]
+	const last  = group.instances[group.instances.length - 1]
+	const name  = group.instances.length === 1 ? first.name : compactName(first.name, last.name)
+	return groupIsVariable(group, axes) ? `${name} VF.${ext}` : `${name}.${ext}`
 }
 
 // ── Sub-components ────────────────────────────────────────────────────────────
@@ -670,6 +696,7 @@ export default function Demo() {
 			const outputs = groups.map((group) => {
 				const first = group.instances[0]
 				const last  = group.instances[group.instances.length - 1]
+				// Send compact name as the output identifier; VF/static suffix is applied client-side on download
 				const name  = group.instances.length === 1 ? first.name : compactName(first.name, last.name)
 				return { name, instances: group.instances.map((i) => i.name) }
 			})
@@ -694,7 +721,7 @@ export default function Demo() {
 				const url  = URL.createObjectURL(blob)
 				const a    = document.createElement('a')
 				a.href = url
-				a.download = `${result.name} VF.${FORMAT_EXT[fmt]}`
+				a.download = groupFilename(groups[idx], axes, FORMAT_EXT[fmt])
 				a.click()
 				URL.revokeObjectURL(url)
 
@@ -929,8 +956,7 @@ export default function Demo() {
 						const label      = group.instances.length === 1
 							? first.name
 							: `${first.name} → ${last.name}`
-						const name       = group.instances.length === 1 ? first.name : compactName(first.name, last.name)
-						const filename   = `${name} VF.${FORMAT_EXT[outputFormat]}`
+						const filename   = groupFilename(group, axes, FORMAT_EXT[outputFormat])
 						const isIsolated = group.instances.length === 1
 						const nameTable  = nameTables[i]
 
@@ -1053,16 +1079,11 @@ export default function Demo() {
 						</div>
 						{!processing && (
 							<div className="flex flex-col gap-0.5">
-								{groups.map((group, i) => {
-									const first = group.instances[0]
-									const last  = group.instances[group.instances.length - 1]
-									const name  = group.instances.length === 1 ? first.name : compactName(first.name, last.name)
-									return (
-										<p key={i} className="text-[10px] font-mono opacity-20">
-											{name} VF.{FORMAT_EXT[outputFormat]}
-										</p>
-									)
-								})}
+								{groups.map((group, i) => (
+								<p key={i} className="text-[10px] font-mono opacity-20">
+									{groupFilename(group, axes, FORMAT_EXT[outputFormat])}
+								</p>
+							))}
 							</div>
 						)}
 						{processing && (
