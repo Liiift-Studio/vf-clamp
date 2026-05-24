@@ -87,6 +87,20 @@ describe('clampFont — integration (real Pyodide + fonttools)', () => {
 		})
 	}, 180_000)
 
+	it('woff format output has wOFF magic bytes', async () => {
+		const input = interVF()
+		const [result] = await clampFont(input, {
+			format: 'woff',
+			outputs: [{ name: 'Text', axes: { wght: { min: 400, max: 700 } } }],
+		})
+		// WOFF magic: 0x774F4646
+		expect(result.buffer[0]).toBe(0x77)
+		expect(result.buffer[1]).toBe(0x4f)
+		expect(result.buffer[2]).toBe(0x46)
+		expect(result.buffer[3]).toBe(0x46)
+		expect(result.format).toBe('woff')
+	}, 180_000)
+
 	it('woff2 format output has wOF2 magic bytes and is smaller than TTF', async () => {
 		const input = interVF()
 		const [ttf, woff2] = await Promise.all([
