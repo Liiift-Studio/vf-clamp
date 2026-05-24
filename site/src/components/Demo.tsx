@@ -23,13 +23,6 @@ const STAGE_LABELS = [
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-function toBase64(buf: Uint8Array<ArrayBuffer>): string {
-	let binary = ''
-	const chunk = 0x8000
-	for (let i = 0; i < buf.length; i += chunk)
-		binary += String.fromCharCode(...buf.subarray(i, i + chunk))
-	return btoa(binary)
-}
 
 const FORMAT_MIME: Record<OutputFormat, string> = {
 	ttf:   'font/ttf',
@@ -716,11 +709,13 @@ export default function Demo() {
 				return { name, instances: group.instances.map((i) => i.name) }
 			})
 
-			const res = await fetch('/api/demo/clamp', {
-				method: 'POST',
-				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({ font: toBase64(fontBuffer), outputs, format: outputFormat }),
-			})
+			// Send as multipart so the font travels as raw binary — no base64 overhead. (#2)
+			const fd = new FormData()
+			fd.append('font', new Blob([fontBuffer], { type: 'font/ttf' }), 'font')
+			fd.append('outputs', JSON.stringify(outputs))
+			if (outputFormat !== 'ttf') fd.append('format', outputFormat)
+
+			const res = await fetch('/api/demo/clamp', { method: 'POST', body: fd })
 			const json = await res.json()
 			if (!res.ok) throw new Error(json.error ?? `HTTP ${res.status}`)
 

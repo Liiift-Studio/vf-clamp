@@ -1,5 +1,7 @@
 // site/src/app/api/demo/clamp/route.ts — unauthenticated demo endpoint
-// Accepts { font: base64, subfamilies, format? } and returns restricted font buffers.
+// Accepts multipart/form-data: font (binary), outputs (JSON string), format? (string).
+// Using multipart avoids the ~33% base64 inflation of the previous JSON approach,
+// so fonts up to 20 MB can reach the handler without hitting platform body limits. (#2)
 import { type NextRequest, NextResponse } from 'next/server'
 import { clampFont } from '@liiift-studio/vf-clamp'
 import type { OutputConfig, OutputFormat } from '@liiift-studio/vf-clamp'
@@ -8,39 +10,46 @@ import { checkRateLimit, getClientIp } from '../../../../lib/rateLimit'
 const MAX_BYTES  = 20 * 1024 * 1024 // 20 MB
 const TIMEOUT_MS = 60_000            // 60 s — prevents hangs on pathological fonts (#3)
 
-interface DemoClampRequest {
-	/** Base64-encoded source font binary */
-	font: string
-	outputs: OutputConfig[]
-	format?: OutputFormat
-}
+const VALID_FORMATS = new Set(['ttf', 'otf', 'woff', 'woff2'])
 
 export async function POST(req: NextRequest) {
 	if (!checkRateLimit(getClientIp(req))) {
 		return NextResponse.json({ error: 'Too many requests — please wait a moment' }, { status: 429 })
 	}
 
-	let body: DemoClampRequest
+	let form: FormData
 	try {
-		body = await req.json()
+		form = await req.formData()
 	} catch {
-		return NextResponse.json({ error: 'Request body must be valid JSON' }, { status: 400 })
+		return NextResponse.json({ error: 'Request must be multipart/form-data' }, { status: 400 })
 	}
 
-	const { font: fontBase64, outputs, format } = body
+	const fontEntry  = form.get('font')
+	const outputsRaw = form.get('outputs')
+	const formatRaw  = form.get('format') ?? 'ttf'
 
-	if (!fontBase64) return NextResponse.json({ error: 'font is required' }, { status: 400 })
-	if (!Array.isArray(outputs) || !outputs.length) {
-		return NextResponse.json({ error: 'outputs must be a non-empty array' }, { status: 400 })
+	if (!fontEntry || !(fontEntry instanceof Blob)) {
+		return NextResponse.json({ error: 'font field is required (binary)' }, { status: 400 })
+	}
+	if (typeof outputsRaw !== 'string') {
+		return NextResponse.json({ error: 'outputs field is required (JSON string)' }, { status: 400 })
 	}
 
-	let fontBuffer: Buffer
+	const format = String(formatRaw) as OutputFormat
+	if (!VALID_FORMATS.has(format)) {
+		return NextResponse.json({ error: `Invalid format "${format}"` }, { status: 400 })
+	}
+
+	let outputs: OutputConfig[]
 	try {
-		fontBuffer = Buffer.from(fontBase64, 'base64')
-	} catch {
-		return NextResponse.json({ error: 'Invalid base64 font data' }, { status: 400 })
+		const parsed = JSON.parse(outputsRaw)
+		if (!Array.isArray(parsed) || !parsed.length) throw new Error('must be a non-empty array')
+		outputs = parsed
+	} catch (e) {
+		return NextResponse.json({ error: `Invalid outputs: ${e instanceof Error ? e.message : String(e)}` }, { status: 400 })
 	}
 
+	const fontBuffer = Buffer.from(await fontEntry.arrayBuffer())
 	if (fontBuffer.length > MAX_BYTES) {
 		return NextResponse.json({ error: 'Font too large (max 20 MB)' }, { status: 413 })
 	}
