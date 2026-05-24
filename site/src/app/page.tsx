@@ -250,6 +250,20 @@ for (const result of results) {
 					</div>
 
 					<div className="flex flex-col gap-3">
+						<p className="opacity-50">CLI — from the shell</p>
+						<CodeBlock code={`# Pin wght, restrict wdth, keep all other axes
+npx @liiift-studio/vf-clamp-cli clamp font.ttf \\
+  --output out/ \\
+  --axis wght:400 \\
+  --axis wdth:75:100 \\
+  --axis opsz:keep
+
+# tag:value       → pin axis at value (axis removed from output)
+# tag:min:max     → restrict to range (axis stays variable)
+# tag:*  tag:keep → keep full original range (explicit no-op)`} />
+					</div>
+
+					<div className="flex flex-col gap-3">
 						<p className="opacity-50">Axis value reference</p>
 						<table className="w-full text-xs">
 							<thead>
@@ -261,7 +275,7 @@ for (const result of results) {
 							<tbody className="opacity-70">
 								<tr className="border-t border-white/10 hover:bg-white/5 transition-colors"><td className="py-2 pr-6 font-mono">number</td><td className="py-2">Pin axis at value — removed from output design space</td></tr>
 								<tr className="border-t border-white/10 hover:bg-white/5 transition-colors"><td className="py-2 pr-6 font-mono">&#123; min, max &#125;</td><td className="py-2">Restrict to range — axis stays variable within bounds</td></tr>
-								<tr className="border-t border-white/10 hover:bg-white/5 transition-colors"><td className="py-2 pr-6 font-mono">null</td><td className="py-2">Drop axis at its default — removed from output, same as pinning at default</td></tr>
+								<tr className="border-t border-white/10 hover:bg-white/5 transition-colors"><td className="py-2 pr-6 font-mono">null</td><td className="py-2">Explicitly keep full original range — same as omitting the axis entirely</td></tr>
 								<tr className="border-t border-white/10 hover:bg-white/5 transition-colors"><td className="py-2 pr-6 font-mono italic opacity-50">omitted</td><td className="py-2">Keep full original range — axis is unchanged</td></tr>
 							</tbody>
 						</table>
@@ -343,6 +357,16 @@ X-API-Key: <your-key>
 							Pyodide (the Python WASM runtime) takes ~10 s to initialise on first use per
 							process. Subsequent calls are fast. On vfclamp.com the engine is kept warm with
 							a cron ping — cold starts mainly affect self-hosted or edge deployments.
+						</p>
+					</div>
+					<div className="flex flex-col gap-2">
+						<p className="font-semibold opacity-100">Default axis value clamping</p>
+						<p>
+							If you restrict an axis to a range that excludes its default value — for example,
+							restricting <code className="text-xs font-mono">wght</code> to 100–300 when the font&rsquo;s
+							default is 400 — fonttools silently clamps the default to the nearest bound.
+							The output is valid, but the default weight will be 300, not 400. The Glyphs
+							and RoboFont plugins log a console warning when this occurs.
 						</p>
 					</div>
 					<div className="flex flex-col gap-2">
