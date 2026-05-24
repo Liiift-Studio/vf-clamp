@@ -235,102 +235,82 @@ X-API-Key: <your-key>
 				<div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
 
 					{/* CLI */}
-					<a
-						href="https://github.com/Liiift-Studio/vf-clamp-cli"
-						target="_blank"
-						rel="noopener noreferrer"
-						className="group flex flex-col gap-3 rounded-xl p-6 transition-colors hover:bg-white/5"
-						style={{ background: "rgba(0,0,0,0.2)" }}
-					>
-						<div className="flex items-center justify-between">
-							<div className="flex items-center gap-3">
-								<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="opacity-60" aria-hidden="true">
-									<polyline points="4 17 10 11 4 5" />
-									<line x1="12" y1="19" x2="20" y2="19" />
-								</svg>
-								<span className="text-sm font-medium">CLI</span>
-							</div>
-							<span className="text-xs opacity-30 group-hover:opacity-60 transition-opacity">GitHub ↗</span>
+					<div className="flex flex-col gap-3 rounded-xl p-6" style={{ background: "rgba(0,0,0,0.2)" }}>
+						<div className="flex items-center gap-3">
+							<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="opacity-60" aria-hidden="true">
+								<polyline points="4 17 10 11 4 5" />
+								<line x1="12" y1="19" x2="20" y2="19" />
+							</svg>
+							<span className="text-sm font-medium">CLI</span>
 						</div>
 						<p className="text-xs opacity-50 leading-relaxed">
 							Run <code className="font-mono">vf-clamp</code> from any shell. Pass a font file, a JSON config, and get clamped outputs written to disk. Scriptable and CI-friendly.
 						</p>
-						<code className="text-xs font-mono opacity-40 mt-auto">npx @liiift-studio/vf-clamp-cli</code>
-					</a>
+						<code className="text-xs font-mono opacity-40">npx @liiift-studio/vf-clamp-cli</code>
+						<div className="flex items-center gap-4 mt-auto pt-2 border-t border-white/10">
+							<a href="https://github.com/Liiift-Studio/vf-clamp-cli" target="_blank" rel="noopener noreferrer" className="text-xs opacity-60 hover:opacity-100 transition-opacity">GitHub ↗</a>
+							<a href="https://www.npmjs.com/package/@liiift-studio/vf-clamp-cli" target="_blank" rel="noopener noreferrer" className="text-xs opacity-60 hover:opacity-100 transition-opacity">npm ↗</a>
+						</div>
+					</div>
 
 					{/* Glyphs.app */}
-					<a
-						href="https://github.com/Liiift-Studio/vf-clamp-glyphs"
-						target="_blank"
-						rel="noopener noreferrer"
-						className="group flex flex-col gap-3 rounded-xl p-6 transition-colors hover:bg-white/5"
-						style={{ background: "rgba(0,0,0,0.2)" }}
-					>
-						<div className="flex items-center justify-between">
-							<div className="flex items-center gap-3">
-								<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="opacity-60" aria-hidden="true">
-									<path d="M12 2L2 7l10 5 10-5-10-5z" />
-									<path d="M2 17l10 5 10-5" />
-									<path d="M2 12l10 5 10-5" />
-								</svg>
-								<span className="text-sm font-medium">Glyphs.app</span>
-							</div>
-							<span className="text-xs opacity-30 group-hover:opacity-60 transition-opacity">GitHub ↗</span>
+					<div className="flex flex-col gap-3 rounded-xl p-6" style={{ background: "rgba(0,0,0,0.2)" }}>
+						<div className="flex items-center gap-3">
+							<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="opacity-60" aria-hidden="true">
+								<path d="M12 2L2 7l10 5 10-5-10-5z" />
+								<path d="M2 17l10 5 10-5" />
+								<path d="M2 12l10 5 10-5" />
+							</svg>
+							<span className="text-sm font-medium">Glyphs.app</span>
 						</div>
 						<p className="text-xs opacity-50 leading-relaxed">
 							Native Glyphs plugin. Select named instances from your open font, choose a format, and export restricted VFs — all without leaving the app.
 						</p>
-						<code className="text-xs font-mono opacity-40 mt-auto">vf-clamp-glyphs.glyphsPlugin</code>
-					</a>
+						<code className="text-xs font-mono opacity-40">vf-clamp-glyphs.glyphsPlugin</code>
+						<div className="flex items-center gap-4 mt-auto pt-2 border-t border-white/10">
+							<a href="https://github.com/Liiift-Studio/vf-clamp-glyphs" target="_blank" rel="noopener noreferrer" className="text-xs opacity-60 hover:opacity-100 transition-opacity">GitHub ↗</a>
+							<a href="https://github.com/Liiift-Studio/vf-clamp-glyphs/releases/latest" target="_blank" rel="noopener noreferrer" className="text-xs opacity-60 hover:opacity-100 transition-opacity">Download ↗</a>
+						</div>
+					</div>
 
 					{/* RoboFont */}
-					<a
-						href="https://github.com/Liiift-Studio/vf-clamp-robofont"
-						target="_blank"
-						rel="noopener noreferrer"
-						className="group flex flex-col gap-3 rounded-xl p-6 transition-colors hover:bg-white/5"
-						style={{ background: "rgba(0,0,0,0.2)" }}
-					>
-						<div className="flex items-center justify-between">
-							<div className="flex items-center gap-3">
-								<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="opacity-60" aria-hidden="true">
-									<rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
-									<line x1="9" y1="9" x2="15" y2="15" />
-									<line x1="15" y1="9" x2="9" y2="15" />
-								</svg>
-								<span className="text-sm font-medium">RoboFont</span>
-							</div>
-							<span className="text-xs opacity-30 group-hover:opacity-60 transition-opacity">GitHub ↗</span>
+					<div className="flex flex-col gap-3 rounded-xl p-6" style={{ background: "rgba(0,0,0,0.2)" }}>
+						<div className="flex items-center gap-3">
+							<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="opacity-60" aria-hidden="true">
+								<rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+								<line x1="9" y1="9" x2="15" y2="15" />
+								<line x1="15" y1="9" x2="9" y2="15" />
+							</svg>
+							<span className="text-sm font-medium">RoboFont</span>
 						</div>
 						<p className="text-xs opacity-50 leading-relaxed">
 							RoboFont extension using fonttools directly. Pick instances from any open UFO-based variable font and export clamped outputs from the Extensions menu.
 						</p>
-						<code className="text-xs font-mono opacity-40 mt-auto">vf-clamp.roboFontExt</code>
-					</a>
+						<code className="text-xs font-mono opacity-40">vf-clamp.roboFontExt</code>
+						<div className="flex items-center gap-4 mt-auto pt-2 border-t border-white/10">
+							<a href="https://github.com/Liiift-Studio/vf-clamp-robofont" target="_blank" rel="noopener noreferrer" className="text-xs opacity-60 hover:opacity-100 transition-opacity">GitHub ↗</a>
+							<a href="https://github.com/Liiift-Studio/vf-clamp-robofont/releases/latest" target="_blank" rel="noopener noreferrer" className="text-xs opacity-60 hover:opacity-100 transition-opacity">Download ↗</a>
+						</div>
+					</div>
 
 					{/* VS Code */}
-					<a
-						href="https://github.com/Liiift-Studio/vf-clamp-vscode"
-						target="_blank"
-						rel="noopener noreferrer"
-						className="group flex flex-col gap-3 rounded-xl p-6 transition-colors hover:bg-white/5"
-						style={{ background: "rgba(0,0,0,0.2)" }}
-					>
-						<div className="flex items-center justify-between">
-							<div className="flex items-center gap-3">
-								<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="opacity-60" aria-hidden="true">
-									<path d="M16 3l5 5-14 13L2 18 16 3z" />
-									<path d="M21 8L8 19" />
-								</svg>
-								<span className="text-sm font-medium">VS Code</span>
-							</div>
-							<span className="text-xs opacity-30 group-hover:opacity-60 transition-opacity">GitHub ↗</span>
+					<div className="flex flex-col gap-3 rounded-xl p-6" style={{ background: "rgba(0,0,0,0.2)" }}>
+						<div className="flex items-center gap-3">
+							<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="opacity-60" aria-hidden="true">
+								<path d="M16 3l5 5-14 13L2 18 16 3z" />
+								<path d="M21 8L8 19" />
+							</svg>
+							<span className="text-sm font-medium">VS Code</span>
 						</div>
 						<p className="text-xs opacity-50 leading-relaxed">
 							Right-click any <code className="font-mono">.ttf</code> in the Explorer to open the vf-clamp panel. Select instances, preview the axis hull, and export — without leaving your editor.
 						</p>
-						<code className="text-xs font-mono opacity-40 mt-auto">vf-clamp.vscode-extension</code>
-					</a>
+						<code className="text-xs font-mono opacity-40">vf-clamp.vscode-extension</code>
+						<div className="flex items-center gap-4 mt-auto pt-2 border-t border-white/10">
+							<a href="https://github.com/Liiift-Studio/vf-clamp-vscode" target="_blank" rel="noopener noreferrer" className="text-xs opacity-60 hover:opacity-100 transition-opacity">GitHub ↗</a>
+							<a href="https://github.com/Liiift-Studio/vf-clamp-vscode/releases/latest" target="_blank" rel="noopener noreferrer" className="text-xs opacity-60 hover:opacity-100 transition-opacity">Download ↗</a>
+						</div>
+					</div>
 
 				</div>
 			</section>
