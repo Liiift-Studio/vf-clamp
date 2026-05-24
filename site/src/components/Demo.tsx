@@ -6,12 +6,10 @@ import type { AxisDefinition, FontInstance, OutputFormat } from '@liiift-studio/
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
-/** A group of adjacent selected instances that produces one VF output file. */
+/** A group of selected instances that produces one output font file. (#5) */
 interface InstanceGroup {
 	instances: FontInstance[]
 	axisRanges: Record<string, { min: number; max: number }>
-	/** Unselected instances whose coordinates fall inside this group's axis hull. */
-	collateral: string[]
 }
 
 type LoadState = 'idle' | 'loading' | 'ready' | 'error'
@@ -56,7 +54,7 @@ const NAME_ID_LABELS: Record<number, string> = {
 	17: 'Pref. subfamily',
 }
 
-/** Parse OpenType name table from a TTF/OTF buffer, returning interesting nameIDs. */
+/** Parse OpenType name table from a TTF/OTF buffer, returning interesting nameIDs. (#10) */
 function parseNameTable(buffer: ArrayBuffer): Array<{ nameId: number; label: string; value: string }> {
 	try {
 		const view      = new DataView(buffer)
@@ -73,6 +71,8 @@ function parseNameTable(buffer: ArrayBuffer): Array<{ nameId: number; label: str
 		const stringOffset = view.getUint16(nameOffset + 4)
 		const INTERESTING  = new Set([1, 2, 4, 6, 16, 17])
 		const byId         = new Map<number, { platformId: number; value: string }>()
+		const utf16Decoder = new TextDecoder('utf-16be')
+		const macDecoder   = new TextDecoder('macintosh')
 
 		for (let i = 0; i < count; i++) {
 			const rec        = nameOffset + 6 + i * 12
@@ -85,12 +85,10 @@ function parseNameTable(buffer: ArrayBuffer): Array<{ nameId: number; label: str
 			if (existing && existing.platformId === 3) continue // already have Windows/Unicode entry
 
 			const strStart = nameOffset + stringOffset + strOff
-			let value = ''
-			if (platformId === 3) {
-				for (let j = 0; j < length; j += 2) value += String.fromCharCode(view.getUint16(strStart + j))
-			} else {
-				for (let j = 0; j < length; j++) value += String.fromCharCode(view.getUint8(strStart + j))
-			}
+			const slice    = new Uint8Array(buffer, strStart, length)
+			const value    = platformId === 3
+				? utf16Decoder.decode(slice) // handles surrogate pairs correctly
+				: macDecoder.decode(slice)    // Mac Roman differs from Latin-1 in 0x80–0xFF
 			byId.set(nameId, { platformId, value })
 		}
 
@@ -276,26 +274,27 @@ function computeGroups(
 		return h
 	}
 
-	function hullCollateral(h: Record<string, { min: number; max: number }>): string[] {
-		return instances
-			.filter((inst) => {
-				if (selected.has(inst.name)) return false
-				return axes.every((axis) => {
-					const v = inst.coordinates[axis.tag] ?? axis.default
-					const r = h[axis.tag]
-					return v >= r.min && v <= r.max
-				})
+	function hasCollateral(h: Record<string, { min: number; max: number }>): boolean {
+		return instances.some((inst) => {
+			if (selected.has(inst.name)) return false
+			return axes.every((axis) => {
+				const v = inst.coordinates[axis.tag] ?? axis.default
+				const r = h[axis.tag]
+				return v >= r.min && v <= r.max
 			})
-			.map((i) => i.name)
+		})
 	}
 
 	// ── Step 1: try one group for everything ────────────────────────────────
 	const globalHull = makeHull(selectedInstances)
-	if (hullCollateral(globalHull).length === 0) {
-		return [{ instances: selectedInstances, axisRanges: globalHull, collateral: [] }]
+	if (!hasCollateral(globalHull)) {
+		return [{ instances: selectedInstances, axisRanges: globalHull }]
 	}
 
 	// ── Step 2: greedy pairwise merging ─────────────────────────────────────
+	// Only merge two buckets when their combined hull contains no unselected instances.
+	// By construction every resulting bucket has empty collateral, so we don't
+	// store it — the collateral warning in the UI was dead code. (#8)
 	type Bucket = { insts: FontInstance[]; h: Record<string, { min: number; max: number }> }
 	const buckets: Bucket[] = selectedInstances.map((inst) => ({
 		insts: [inst],
@@ -309,7 +308,7 @@ function computeGroups(
 			for (let j = i + 1; j < buckets.length; j++) {
 				const combined = [...buckets[i].insts, ...buckets[j].insts]
 				const combinedHull = makeHull(combined)
-				if (hullCollateral(combinedHull).length === 0) {
+				if (!hasCollateral(combinedHull)) {
 					buckets[i] = { insts: combined, h: combinedHull }
 					buckets.splice(j, 1)
 					merged = true
@@ -343,10 +342,10 @@ function computeGroups(
 
 	buckets.sort((ga, gb) => ga.h[primaryTag].min - gb.h[primaryTag].min)
 
-	return buckets.map((bucket) => {
-		const sorted = sortInsts(bucket.insts)
-		return { instances: sorted, axisRanges: bucket.h, collateral: hullCollateral(bucket.h) }
-	})
+	return buckets.map((bucket) => ({
+		instances: sortInsts(bucket.insts),
+		axisRanges: bucket.h,
+	}))
 }
 
 // ── Helpers used in render ────────────────────────────────────────────────────
@@ -397,32 +396,22 @@ function AxisRangeBar({
 	)
 }
 
-/** Text specimen that animates through the axis range using CSS font-variation-settings. */
+/**
+ * Text specimen that animates through the axis range using CSS font-variation-settings.
+ * Receives `progress` (0–1 ping-pong) from the parent so all group cards share
+ * a single RAF loop instead of each running their own. (#1)
+ */
 function TextPreview({
 	axes,
 	axisRanges,
+	progress,
 }: {
 	axes: AxisDefinition[]
 	axisRanges: Record<string, { min: number; max: number }>
+	progress: number
 }) {
-	const [progress, setProgress]     = useState(0)
 	const [editing, setEditing]       = useState(false)
 	const [customText, setCustomText] = useState('')
-	const rafRef   = useRef<number>(0)
-	const startRef = useRef<number | null>(null)
-	const DURATION = 2800
-
-	useEffect(() => {
-		startRef.current = null
-		function tick(now: number) {
-			if (!startRef.current) startRef.current = now
-			const t = ((now - startRef.current) % (DURATION * 2)) / DURATION
-			setProgress(t <= 1 ? t : 2 - t) // ping-pong 0 → 1 → 0
-			rafRef.current = requestAnimationFrame(tick)
-		}
-		rafRef.current = requestAnimationFrame(tick)
-		return () => cancelAnimationFrame(rafRef.current)
-	}, [axisRanges])
 
 	const variationSettings = useMemo(() => {
 		return axes
@@ -472,6 +461,7 @@ function TextPreview({
 			)}
 			<button
 				onClick={() => setEditing((v) => !v)}
+				aria-label={editing ? 'Finish editing preview text' : 'Edit preview text'}
 				className="absolute top-0 right-0 text-[10px] opacity-0 group-hover/preview:opacity-30 hover:!opacity-60 transition-opacity"
 			>
 				{editing ? 'done' : 'edit'}
@@ -507,12 +497,17 @@ export default function Demo() {
 	const [outputFormat, setOutputFormat]       = useState<OutputFormat>('ttf')
 	const [nameTables, setNameTables]           = useState<Record<number, Array<{ nameId: number; label: string; value: string }>>>({})
 	const [expandedNameTable, setExpandedNameTable] = useState<number | null>(null)
+	// Shared ping-pong progress for all TextPreview cards — one RAF loop for all. (#1)
+	const [previewProgress, setPreviewProgress] = useState(0)
 
-	const isLoadingRef       = useRef(false)
-	const containerRef       = useRef<HTMLDivElement>(null)
-	const warmedUpRef        = useRef(false)
-	const styleRef           = useRef<HTMLStyleElement | null>(null)
+	const isLoadingRef        = useRef(false)
+	const containerRef        = useRef<HTMLDivElement>(null)
+	const warmedUpRef         = useRef(false)
+	const styleRef            = useRef<HTMLStyleElement | null>(null)
 	const progressIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
+	const previewRafRef       = useRef<number>(0)
+	const previewStartRef     = useRef<number | null>(null)
+	const PREVIEW_DURATION    = 2800
 
 	// Warmup ping on scroll-into-view
 	useEffect(() => {
@@ -534,6 +529,26 @@ export default function Demo() {
 		)
 		observer.observe(el)
 		return () => observer.disconnect()
+	}, [])
+
+	// Single shared RAF loop for all TextPreview cards — avoids N concurrent loops. (#1)
+	useEffect(() => {
+		previewStartRef.current = null
+		function tick(now: number) {
+			if (!previewStartRef.current) previewStartRef.current = now
+			const t = ((now - previewStartRef.current) % (PREVIEW_DURATION * 2)) / PREVIEW_DURATION
+			setPreviewProgress(t <= 1 ? t : 2 - t)
+			previewRafRef.current = requestAnimationFrame(tick)
+		}
+		previewRafRef.current = requestAnimationFrame(tick)
+		return () => cancelAnimationFrame(previewRafRef.current)
+	}, [])
+
+	// Clear progressIntervalRef on unmount in case the component is removed during processing. (#4)
+	useEffect(() => {
+		return () => {
+			if (progressIntervalRef.current) clearInterval(progressIntervalRef.current)
+		}
 	}, [])
 
 	// Inject @font-face when font buffer changes so TextPreview can render it
@@ -714,16 +729,25 @@ export default function Demo() {
 
 			const parsedTables: Record<number, Array<{ nameId: number; label: string; value: string }>> = {}
 			;(json.results as Array<{ name: string; data: string; format?: string }>).forEach((result, idx) => {
+				const group = groups[idx]
+				if (!group) return // guard against server returning more results than expected (#5)
+
 				const fmt   = (result.format ?? outputFormat) as OutputFormat
 				const bytes = Uint8Array.from(atob(result.data), (c) => c.charCodeAt(0))
+				const filename = groupFilename(group, axes, FORMAT_EXT[fmt])
 
 				const blob = new Blob([bytes], { type: FORMAT_MIME[fmt] })
 				const url  = URL.createObjectURL(blob)
 				const a    = document.createElement('a')
 				a.href = url
-				a.download = groupFilename(groups[idx], axes, FORMAT_EXT[fmt])
-				a.click()
-				URL.revokeObjectURL(url)
+				a.download = filename
+
+				// Stagger clicks so Firefox/Safari don't silently drop simultaneous
+				// programmatic downloads as popup-blocker violations. (#9)
+				setTimeout(() => {
+					a.click()
+					URL.revokeObjectURL(url)
+				}, idx * 150)
 
 				if (fmt === 'ttf' || fmt === 'otf') {
 					parsedTables[idx] = parseNameTable(bytes.buffer)
@@ -828,9 +852,12 @@ export default function Demo() {
 											([k]) => k !== group.axisTag,
 										)
 
+										const tooltipId = `tip-${inst.name.replace(/\s+/g, '-')}`
 										return (
 											<div key={inst.name} className="relative">
 												<button
+													aria-pressed={isSelected}
+													aria-describedby={isIsolated ? tooltipId : undefined}
 													onClick={() => toggleInstance(inst.name)}
 													onMouseEnter={() => isIsolated && setTooltip(inst.name)}
 													onMouseLeave={() => setTooltip(null)}
@@ -852,7 +879,11 @@ export default function Demo() {
 												</button>
 
 												{tooltip === inst.name && (
-													<div className="absolute bottom-full left-0 mb-2 z-10 bg-[#0c1417] border border-amber-400/30 rounded-lg px-3 py-2 text-xs text-amber-300/80 whitespace-nowrap shadow-xl pointer-events-none">
+													<div
+														id={tooltipId}
+														role="tooltip"
+														className="absolute bottom-full left-0 mb-2 z-10 bg-[#0c1417] border border-amber-400/30 rounded-lg px-3 py-2 text-xs text-amber-300/80 whitespace-nowrap shadow-xl pointer-events-none"
+													>
 														⚠ No adjacent neighbours selected — generates a separate file
 													</div>
 												)}
@@ -978,18 +1009,12 @@ export default function Demo() {
 											</span>
 										)}
 									</div>
-									{group.collateral.length > 0 && (
-										<p className="text-xs text-amber-400/60">
-											⚠ range also covers{' '}
-											<span className="font-mono">{group.collateral.join(', ')}</span>
-										</p>
-									)}
 									<p className="text-[10px] font-mono opacity-25">{filename}</p>
 								</div>
 
-								{/* Text preview */}
+								{/* Text preview — receives shared progress so all cards share one RAF loop (#1) */}
 								{hasDemoFont && (
-									<TextPreview axes={axes} axisRanges={group.axisRanges} />
+									<TextPreview axes={axes} axisRanges={group.axisRanges} progress={previewProgress} />
 								)}
 
 								{/* Axis range bars */}

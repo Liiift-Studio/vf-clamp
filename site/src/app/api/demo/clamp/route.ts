@@ -5,7 +5,8 @@ import { clampFont } from '@liiift-studio/vf-clamp'
 import type { OutputConfig, OutputFormat } from '@liiift-studio/vf-clamp'
 import { checkRateLimit, getClientIp } from '../../../../lib/rateLimit'
 
-const MAX_BYTES = 20 * 1024 * 1024 // 20 MB
+const MAX_BYTES  = 20 * 1024 * 1024 // 20 MB
+const TIMEOUT_MS = 60_000            // 60 s — prevents hangs on pathological fonts (#3)
 
 interface DemoClampRequest {
 	/** Base64-encoded source font binary */
@@ -45,7 +46,13 @@ export async function POST(req: NextRequest) {
 	}
 
 	try {
-		const results = await clampFont(fontBuffer, { outputs, format })
+		const timeout = new Promise<never>((_, reject) =>
+			setTimeout(() => reject(new Error('Processing timed out after 60 s')), TIMEOUT_MS)
+		)
+		const results = await Promise.race([
+			clampFont(fontBuffer, { outputs, format }),
+			timeout,
+		])
 		return NextResponse.json({
 			results: results.map((r) => ({
 				name: r.name,
@@ -55,10 +62,12 @@ export async function POST(req: NextRequest) {
 			})),
 		})
 	} catch (err) {
+		const message = err instanceof Error ? err.message : String(err)
+		const isTimeout = message.includes('timed out')
 		console.error('Demo clampFont failed:', err)
 		return NextResponse.json(
-			{ error: `Font processing failed: ${err instanceof Error ? err.message : String(err)}` },
-			{ status: 500 }
+			{ error: `Font processing failed: ${message}` },
+			{ status: isTimeout ? 504 : 500 }
 		)
 	}
 }

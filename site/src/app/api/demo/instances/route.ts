@@ -7,15 +7,19 @@ import { checkRateLimit, getClientIp } from '../../../../lib/rateLimit'
 const MAX_BYTES = 20 * 1024 * 1024 // 20 MB
 
 export async function POST(req: NextRequest) {
+	const buffer = await req.arrayBuffer()
+
+	// Tiny bodies (≤4 bytes) are warmup pings from the Demo component — bypass
+	// the rate limit so users don't lose one of their 10 allowed requests before
+	// they've interacted with the demo. (#6)
+	if (buffer.byteLength <= 4) {
+		return NextResponse.json({ warmup: true })
+	}
+
 	if (!checkRateLimit(getClientIp(req))) {
 		return NextResponse.json({ error: 'Too many requests — please wait a moment' }, { status: 429 })
 	}
 
-	const buffer = await req.arrayBuffer()
-
-	if (buffer.byteLength === 0) {
-		return NextResponse.json({ error: 'Empty request body' }, { status: 400 })
-	}
 	if (buffer.byteLength > MAX_BYTES) {
 		return NextResponse.json({ error: 'Font file too large (max 20 MB)' }, { status: 413 })
 	}
