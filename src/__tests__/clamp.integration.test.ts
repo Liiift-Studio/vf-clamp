@@ -1,10 +1,31 @@
 // src/__tests__/clamp.integration.test.ts — integration tests using real Pyodide + fonttools
+import { createRequire } from 'node:module'
 import { describe, it, expect } from 'vitest'
 import { readFileSync } from 'node:fs'
 import { join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { clampFont } from '../core/clamp.js'
 import { getInstances } from '../core/instances.js'
+
+const _require = createRequire(import.meta.url)
+const { preparePyodide, PyodideFile } = _require('@web-alchemy/fonttools/src/pyodide.js')
+
+/** Read nameID 1 (Family name) from a TTF buffer via fonttools */
+async function readFamilyName(buffer: Uint8Array): Promise<string | null> {
+	const pyodide = await preparePyodide()
+	const file = new PyodideFile({ pyodide })
+	await file.upload(buffer)
+	const fn = await pyodide.runPythonAsync(`
+from fontTools import ttLib
+def get_family_name(path):
+    font = ttLib.TTFont(path)
+    return font['name'].getDebugName(1) or ''
+get_family_name
+`)
+	const result: string = fn(file.filename)
+	file.delete()
+	return result || null
+}
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const FIXTURES = join(__dirname, '../../fixtures')
@@ -82,6 +103,16 @@ describe('clampFont — integration (real Pyodide + fonttools)', () => {
 		// Brotli compression makes WOFF2 smaller than the equivalent TTF
 		expect(woff2[0].buffer.byteLength).toBeLessThan(ttf[0].buffer.byteLength)
 	}, 180_000)
+
+	it('name table reflects the output name', async () => {
+		const input = interVF()
+		const [result] = await clampFont(input, {
+			outputs: [{ name: 'Inter Light-Bold', axes: { wght: { min: 300, max: 700 } } }],
+		})
+
+		const familyName = await readFamilyName(result.buffer)
+		expect(familyName).toBe('Inter Light-Bold')
+	}, 120_000)
 
 	it('null axis is omitted — full-range font is returned unchanged', async () => {
 		const input = interVF()
