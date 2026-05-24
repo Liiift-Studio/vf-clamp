@@ -1,0 +1,12 @@
+[submodule "plugins/cli"]
+	path = plugins/cli
+	url = https://github.com/Liiift-Studio/vf-clamp-cli.git
+[submodule "plugins/glyphs"]
+	path = plugins/glyphs
+	url = https://github.com/Liiift-Studio/vf-clamp-glyphs.git
+[submodule "plugins/robofont"]
+	path = plugins/robofont
+	url = https://github.com/Liiift-Studio/vf-clamp-robofont.git
+[submodule "plugins/vscode"]
+	path = plugins/vscode
+	url = https://github.com/Liiift-Studio/vf-clamp-vscode.git
