@@ -20,6 +20,7 @@ export default function MagnetBlock({
 	fixedAxes = {},
 }: MagnetBlockProps) {
 	const ref = useRef<HTMLParagraphElement>(null)
+	const lastPos = useRef<{ x: number; y: number } | null>(null)
 
 	function buildVS(weight: number) {
 		const parts = [`'wght' ${weight.toFixed(0)}`]
@@ -27,22 +28,32 @@ export default function MagnetBlock({
 		return parts.join(', ')
 	}
 
-	const handleMouseMove = useCallback((e: MouseEvent) => {
+	function applyProximity(clientX: number, clientY: number) {
 		const el = ref.current
 		if (!el) return
 		const rect = el.getBoundingClientRect()
-		// Distance to nearest point on the element rect (0 when cursor is inside)
-		const dx = Math.max(rect.left - e.clientX, 0, e.clientX - rect.right)
-		const dy = Math.max(rect.top - e.clientY, 0, e.clientY - rect.bottom)
+		const dx = Math.max(rect.left - clientX, 0, clientX - rect.right)
+		const dy = Math.max(rect.top - clientY, 0, clientY - rect.bottom)
 		const dist = Math.sqrt(dx * dx + dy * dy)
 		const proximity = Math.max(0, 1 - dist / radius)
 		const eased = 1 - (1 - proximity) ** 2
 		const weight = minWeight + (maxWeight - minWeight) * eased
 		el.style.fontVariationSettings = buildVS(weight)
+	}
+
+	const handleMouseMove = useCallback((e: MouseEvent) => {
+		lastPos.current = { x: e.clientX, y: e.clientY }
+		applyProximity(e.clientX, e.clientY)
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [minWeight, maxWeight, radius])
+
+	const handleScroll = useCallback(() => {
+		if (lastPos.current) applyProximity(lastPos.current.x, lastPos.current.y)
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [minWeight, maxWeight, radius])
 
 	const handleMouseLeave = useCallback(() => {
+		lastPos.current = null
 		const el = ref.current
 		if (el) el.style.fontVariationSettings = buildVS(minWeight)
 		// eslint-disable-next-line react-hooks/exhaustive-deps
@@ -50,12 +61,14 @@ export default function MagnetBlock({
 
 	useEffect(() => {
 		window.addEventListener('mousemove', handleMouseMove, { passive: true })
+		window.addEventListener('scroll', handleScroll, { passive: true, capture: true })
 		document.documentElement.addEventListener('mouseleave', handleMouseLeave)
 		return () => {
 			window.removeEventListener('mousemove', handleMouseMove)
+			window.removeEventListener('scroll', handleScroll, { capture: true })
 			document.documentElement.removeEventListener('mouseleave', handleMouseLeave)
 		}
-	}, [handleMouseMove, handleMouseLeave])
+	}, [handleMouseMove, handleScroll, handleMouseLeave])
 
 	return (
 		<p
