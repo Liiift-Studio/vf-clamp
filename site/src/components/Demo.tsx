@@ -38,6 +38,13 @@ const FORMAT_EXT: Record<OutputFormat, string> = {
 	woff2: 'woff2',
 }
 
+/** Format a byte count as a human-readable string. */
+function formatBytes(n: number): string {
+	if (n >= 1024 * 1024) return `${(n / 1024 / 1024).toFixed(1)} MB`
+	if (n >= 1024) return `${Math.round(n / 1024)} KB`
+	return `${n} B`
+}
+
 const NAME_ID_LABELS: Record<number, string> = {
 	1:  'Family',
 	2:  'Subfamily',
@@ -501,6 +508,7 @@ export default function Demo() {
 	const [outputFormat, setOutputFormat]       = useState<OutputFormat>('ttf')
 	const [nameTables, setNameTables]           = useState<Record<number, Array<{ nameId: number; label: string; value: string }>>>({})
 	const [expandedNameTable, setExpandedNameTable] = useState<number | null>(null)
+	const [outputSizes, setOutputSizes]         = useState<Record<number, number>>({})
 	// Shared ping-pong progress for all TextPreview cards — one RAF loop for all. (#1)
 	const [previewProgress, setPreviewProgress] = useState(0)
 
@@ -624,6 +632,7 @@ export default function Demo() {
 		setShowAdvanced(false)
 		setNameTables({})
 		setExpandedNameTable(null)
+		setOutputSizes({})
 		setFontBuffer(buffer)
 		setFontName(name)
 
@@ -734,6 +743,7 @@ export default function Demo() {
 			setProcessingStage(3)
 
 			const parsedTables: Record<number, Array<{ nameId: number; label: string; value: string }>> = {}
+			const newOutputSizes: Record<number, number> = {}
 			;(json.results as Array<{ name: string; data: string; format?: string }>).forEach((result, idx) => {
 				const group = groups[idx]
 				if (!group) return // guard against server returning more results than expected (#5)
@@ -741,6 +751,8 @@ export default function Demo() {
 				const fmt   = (result.format ?? outputFormat) as OutputFormat
 				const bytes = Uint8Array.from(atob(result.data), (c) => c.charCodeAt(0))
 				const filename = groupFilename(group, axes, FORMAT_EXT[fmt])
+
+				newOutputSizes[idx] = bytes.byteLength
 
 				const blob = new Blob([bytes], { type: FORMAT_MIME[fmt] })
 				const url  = URL.createObjectURL(blob)
@@ -760,6 +772,7 @@ export default function Demo() {
 				}
 			})
 			setNameTables(parsedTables)
+			setOutputSizes(newOutputSizes)
 		} catch (err) {
 			setProcessError(err instanceof Error ? err.message : 'Processing failed')
 		} finally {
@@ -813,6 +826,7 @@ export default function Demo() {
 							<p className="text-sm opacity-80 font-mono">{fontName}</p>
 							<p className="text-xs opacity-30 font-mono tabular-nums">
 								{axes.map((a) => `${a.tag} ${a.minimum}–${a.maximum}`).join(' · ')}
+								{fontBuffer ? ` · ${formatBytes(fontBuffer.byteLength)}` : ''}
 							</p>
 						</div>
 					)}
@@ -1015,7 +1029,22 @@ export default function Demo() {
 											</span>
 										)}
 									</div>
-									<p className="text-[10px] font-mono opacity-25">{filename}</p>
+									<div className="flex items-center gap-3 flex-wrap">
+										<p className="text-[10px] font-mono opacity-25">{filename}</p>
+										<p className="text-[10px] font-mono opacity-25">
+											{group.instances.length} {group.instances.length === 1 ? 'instance' : 'instances'}
+										</p>
+										{outputSizes[i] !== undefined && fontBuffer && (
+											<p className="text-[10px] font-mono opacity-40">
+												{formatBytes(fontBuffer.byteLength)} → {formatBytes(outputSizes[i])}
+												{fontBuffer.byteLength > outputSizes[i] && (
+													<span className="text-green-400/60 ml-1">
+														({Math.round((1 - outputSizes[i] / fontBuffer.byteLength) * 100)}% smaller)
+													</span>
+												)}
+											</p>
+										)}
+									</div>
 								</div>
 
 								{/* Text preview — receives shared progress so all cards share one RAF loop (#1) */}

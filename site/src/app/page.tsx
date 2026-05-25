@@ -3,6 +3,7 @@ import CodeBlock from "../components/CodeBlock"
 import CopyInstall from "../components/CopyInstall"
 import SiteFooter from "../components/SiteFooter"
 import Demo from "../components/Demo"
+import MagnetText from "../components/MagnetText"
 import { version } from "../../../package.json"
 import { version as siteVersion } from "../../package.json"
 
@@ -15,8 +16,8 @@ export default function Home() {
 				<div className="flex flex-col gap-2">
 					<p className="text-xs uppercase tracking-widest opacity-50">vf-clamp</p>
 					<h1 className="text-4xl lg:text-8xl xl:text-9xl" style={{ fontFamily: "var(--font-merriweather), serif", fontVariationSettings: '"wght" 300, "opsz" 144', lineHeight: "1.05em" }}>
-						Restrict the range,<br />
-						<span style={{ opacity: 0.5, fontStyle: "italic" }}>keep what varies.</span>
+						<MagnetText minWeight={300} maxWeight={800} radius={220} fixedAxes={{ opsz: 144 }}>Restrict the range,</MagnetText><br />
+						<MagnetText minWeight={300} maxWeight={800} radius={220} fixedAxes={{ opsz: 144 }} style={{ opacity: 0.5, fontStyle: "italic" }}>keep what varies.</MagnetText>
 					</h1>
 				</div>
 				<div className="flex items-center gap-4">
@@ -78,20 +79,25 @@ export default function Home() {
 						<p className="text-xs opacity-50 leading-relaxed">
 							Run <code className="font-mono">vf-clamp</code> from any shell. Pass a font file, a JSON config, and get clamped outputs written to disk. Scriptable and CI-friendly.
 						</p>
-						<code className="text-xs font-mono opacity-40">npx @liiift-studio/vf-clamp-cli</code>
+						<code className="text-xs font-mono opacity-40">vf-clamp clamp font.ttf --axis wght:400:700</code>
 						<div className="flex items-center gap-2 mt-auto pt-3">
-							<a href="https://www.npmjs.com/package/@liiift-studio/vf-clamp-cli" target="_blank" rel="noopener noreferrer" className="flex-1 text-center text-xs font-medium py-2 px-3 rounded-lg bg-white/10 hover:bg-white/15 transition-colors">npm ↗</a>
-							<a href="https://github.com/Liiift-Studio/vf-clamp-cli" target="_blank" rel="noopener noreferrer" className="flex-1 text-center text-xs py-2 px-3 rounded-lg border border-white/15 hover:border-white/30 hover:bg-white/5 transition-colors opacity-70 hover:opacity-100">GitHub ↗</a>
+							<a href="https://github.com/Liiift-Studio/vf-clamp-cli" target="_blank" rel="noopener noreferrer" className="flex-1 text-center text-xs font-medium py-2 px-3 rounded-lg bg-white/10 hover:bg-white/15 transition-colors">GitHub ↗</a>
+							<a href="https://github.com/Liiift-Studio/vf-clamp-cli#readme" target="_blank" rel="noopener noreferrer" className="flex-1 text-center text-xs py-2 px-3 rounded-lg border border-white/15 hover:border-white/30 hover:bg-white/5 transition-colors opacity-70 hover:opacity-100">Docs ↗</a>
 						</div>
 					</div>
 
 					{/* Glyphs.app */}
 					<div className="flex flex-col gap-3 rounded-xl p-6" style={{ background: "rgba(0,0,0,0.2)" }}>
 						<div className="flex items-center gap-3">
-							<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="opacity-60" aria-hidden="true">
-								<path d="M12 2L2 7l10 5 10-5-10-5z" />
-								<path d="M2 17l10 5 10-5" />
-								<path d="M2 12l10 5 10-5" />
+							{/* Glyphs.app: bezier path with anchor + handle nodes — the signature Glyphs UI motif */}
+							<svg width="18" height="18" viewBox="0 0 18 18" fill="none" className="opacity-60" aria-hidden="true">
+								<path d="M3 15C4 9 9 4 15 3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+								<circle cx="3" cy="15" r="2" fill="currentColor"/>
+								<circle cx="15" cy="3" r="2" fill="currentColor"/>
+								<line x1="3" y1="15" x2="3" y2="8" stroke="currentColor" strokeWidth="1" opacity="0.45"/>
+								<line x1="15" y1="3" x2="8" y2="3" stroke="currentColor" strokeWidth="1" opacity="0.45"/>
+								<circle cx="3" cy="8" r="1.5" fill="none" stroke="currentColor" strokeWidth="1" opacity="0.65"/>
+								<circle cx="8" cy="3" r="1.5" fill="none" stroke="currentColor" strokeWidth="1" opacity="0.65"/>
 							</svg>
 							<span className="text-sm font-medium">Glyphs.app</span>
 						</div>
@@ -108,10 +114,14 @@ export default function Home() {
 					{/* RoboFont */}
 					<div className="flex flex-col gap-3 rounded-xl p-6" style={{ background: "rgba(0,0,0,0.2)" }}>
 						<div className="flex items-center gap-3">
-							<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="opacity-60" aria-hidden="true">
-								<rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
-								<line x1="9" y1="9" x2="15" y2="15" />
-								<line x1="15" y1="9" x2="9" y2="15" />
+							{/* RoboFont: robot face — antenna, eyes, mouth */}
+							<svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" className="opacity-60" aria-hidden="true">
+								<rect x="3" y="7" width="12" height="9" rx="2" strokeWidth="1.4"/>
+								<line x1="9" y1="7" x2="9" y2="4" strokeWidth="1.4"/>
+								<circle cx="9" cy="3" r="1.2" fill="currentColor" stroke="none"/>
+								<circle cx="6.5" cy="11.5" r="1.5" fill="currentColor" stroke="none"/>
+								<circle cx="11.5" cy="11.5" r="1.5" fill="currentColor" stroke="none"/>
+								<path d="M6 14.5h6" strokeWidth="1.4" strokeLinecap="round"/>
 							</svg>
 							<span className="text-sm font-medium">RoboFont</span>
 						</div>
@@ -128,9 +138,10 @@ export default function Home() {
 					{/* VS Code */}
 					<div className="flex flex-col gap-3 rounded-xl p-6" style={{ background: "rgba(0,0,0,0.2)" }}>
 						<div className="flex items-center gap-3">
-							<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="opacity-60" aria-hidden="true">
-								<path d="M16 3l5 5-14 13L2 18 16 3z" />
-								<path d="M21 8L8 19" />
+							{/* VS Code: the distinctive four-panel / fragmented-square logo shape */}
+							<svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" className="opacity-60" aria-hidden="true">
+								<path d="M13 2.5L4.5 10.5l3 1.5L13 2.5z"/>
+								<path d="M4.5 15.5l8.5-3V2.5L4.5 10.5v5z"/>
 							</svg>
 							<span className="text-sm font-medium">VS Code</span>
 						</div>

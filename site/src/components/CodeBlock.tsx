@@ -1,4 +1,6 @@
-// Lightweight syntax-highlighted code block — keywords bold, strings italic, punctuation muted
+'use client'
+// Lightweight syntax-highlighted code block with copy-to-clipboard
+import { useState } from 'react'
 import type { ReactNode } from 'react'
 
 const KEYWORDS = new Set([
@@ -18,7 +20,6 @@ function tokenize(code: string): ReactNode[] {
 	let match: RegExpExecArray | null
 
 	while ((match = TOKEN.exec(code)) !== null) {
-		// Plain gap (whitespace, numbers, operators not in punct set)
 		if (match.index > last) {
 			nodes.push(<span key={key++} style={{ opacity: 0.6 }}>{code.slice(last, match.index)}</span>)
 		}
@@ -49,11 +50,32 @@ function tokenize(code: string): ReactNode[] {
 	return nodes
 }
 
-/** Renders a syntax-highlighted code snippet */
+/** Renders a syntax-highlighted code snippet with a copy-to-clipboard button */
 export default function CodeBlock({ code }: { code: string }) {
+	const [copied, setCopied] = useState(false)
+
+	async function handleCopy() {
+		try {
+			await navigator.clipboard.writeText(code)
+			setCopied(true)
+			setTimeout(() => setCopied(false), 1800)
+		} catch {
+			// clipboard API unavailable (non-HTTPS or blocked)
+		}
+	}
+
 	return (
-		<pre className="bg-white/5 rounded p-4 overflow-x-auto text-xs leading-relaxed font-mono">
-			<code>{tokenize(code)}</code>
-		</pre>
+		<div className="relative group/codeblock">
+			<pre className="bg-white/5 rounded p-4 overflow-x-auto text-xs leading-relaxed font-mono">
+				<code>{tokenize(code)}</code>
+			</pre>
+			<button
+				onClick={handleCopy}
+				aria-label={copied ? 'Copied to clipboard' : 'Copy code to clipboard'}
+				className="absolute top-2 right-2 px-2 py-1 rounded text-[10px] font-mono opacity-0 group-hover/codeblock:opacity-40 hover:!opacity-100 transition-all bg-white/5 hover:bg-white/10 border border-white/10"
+			>
+				{copied ? 'copied ✓' : 'copy'}
+			</button>
+		</div>
 	)
 }
