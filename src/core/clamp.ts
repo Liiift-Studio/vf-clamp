@@ -1,7 +1,7 @@
 // src/core/clamp.ts — clampFont() implementation wrapping @web-alchemy/fonttools
 import { createRequire } from 'node:module'
 import { instantiateVariableFont } from '@web-alchemy/fonttools'
-import type { AxisValue, ClampOptions, ClampResult, FontInstance, OutputFormat } from './types.js'
+import type { AxisValue, AxisDefinition, ClampOptions, ClampResult, FontInstance, OutputFormat } from './types.js'
 import { convertToWoff, convertToWoff2 } from './convert.js'
 import { getInstances } from './instances.js'
 
@@ -164,9 +164,11 @@ export async function clampFont(
 
 	// Read named instances once if any output uses the instances path
 	let fontInstances: FontInstance[] = []
+	let axisDefs: AxisDefinition[] = []
 	if (options.outputs.some((o) => o.instances?.length)) {
 		const result = await getInstances(bytes)
 		fontInstances = result.instances
+		axisDefs = result.axes
 	}
 
 	const results: ClampResult[] = []
@@ -181,6 +183,21 @@ export async function clampFont(
 
 		if (output.axes) {
 			axesConfig = { ...axesConfig, ...output.axes }
+		}
+
+		// Warn if any axis default falls outside the restricted range — fonttools silently clamps it.
+		// Only checked when axisDefs are available (i.e., getInstances was already called).
+		for (const axDef of axisDefs) {
+			const constraint = axesConfig[axDef.tag]
+			if (constraint !== null && constraint !== undefined && typeof constraint === 'object') {
+				const range = constraint as { min: number; max: number }
+				if (axDef.default < range.min || axDef.default > range.max) {
+					const clamped = Math.max(range.min, Math.min(range.max, axDef.default))
+					console.warn(
+						`vf-clamp: axis "${axDef.tag}" default (${axDef.default}) is outside restricted range [${range.min}, ${range.max}] — will be clamped to ${clamped}`
+					)
+				}
+			}
 		}
 
 		// Build the instancer axis map (skip null — keeps full range)
