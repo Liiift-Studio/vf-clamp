@@ -1,5 +1,5 @@
 'use client'
-// MagnetText — cursor-proximity per-character font weight variation (MagnetType effect)
+// MagnetText — cursor-proximity per-character or per-word font weight variation (MagnetType effect)
 
 import { useRef, useCallback, useEffect } from 'react'
 
@@ -9,14 +9,16 @@ interface MagnetTextProps {
 	className?: string
 	/** Inline styles forwarded to the outer span */
 	style?: React.CSSProperties
-	/** Minimum wght axis value (at cursor-far distance) */
+	/** Minimum wght axis value (cursor far away) */
 	minWeight?: number
-	/** Maximum wght axis value (at cursor position) */
+	/** Maximum wght axis value (cursor on top) */
 	maxWeight?: number
-	/** Pixel radius at which weight reaches maxWeight */
+	/** Pixel radius over which weight transitions from min to max */
 	radius?: number
 	/** Fixed axis values to preserve alongside wght (e.g. { opsz: 144 }) */
 	fixedAxes?: Record<string, number>
+	/** 'char' — per-character effect (display text); 'word' — per-word effect (body text) */
+	splitBy?: 'char' | 'word'
 }
 
 export default function MagnetText({
@@ -27,10 +29,11 @@ export default function MagnetText({
 	maxWeight = 900,
 	radius = 180,
 	fixedAxes = {},
+	splitBy = 'char',
 }: MagnetTextProps) {
-	const spansRef = useRef<(HTMLSpanElement | null)[]>([])
+	// Only word spans (not whitespace tokens) are tracked for proximity updates
+	const wordSpansRef = useRef<(HTMLSpanElement | null)[]>([])
 
-	// Build the fontVariationSettings string given a wght value
 	function buildVS(weight: number) {
 		const parts = [`'wght' ${weight.toFixed(0)}`]
 		for (const [tag, val] of Object.entries(fixedAxes)) {
@@ -41,7 +44,7 @@ export default function MagnetText({
 
 	const handleMouseMove = useCallback(
 		(e: MouseEvent) => {
-			for (const span of spansRef.current) {
+			for (const span of wordSpansRef.current) {
 				if (!span) continue
 				const rect = span.getBoundingClientRect()
 				const cx = rect.left + rect.width / 2
@@ -58,7 +61,7 @@ export default function MagnetText({
 	)
 
 	const handleMouseLeave = useCallback(() => {
-		for (const span of spansRef.current) {
+		for (const span of wordSpansRef.current) {
 			if (span) span.style.fontVariationSettings = buildVS(minWeight)
 		}
 		// eslint-disable-next-line react-hooks/exhaustive-deps
@@ -73,20 +76,44 @@ export default function MagnetText({
 		}
 	}, [handleMouseMove, handleMouseLeave])
 
-	const chars = children.split('')
+	// Build token list — words get a ref slot, whitespace is plain text
+	type Token = { text: string; isWord: boolean; refIdx?: number }
+	const tokens: Token[] = []
+	let wordIdx = 0
+
+	if (splitBy === 'word') {
+		// Split preserving whitespace runs so we can render them as plain text nodes
+		for (const t of children.split(/(\s+)/)) {
+			if (!t) continue
+			const isWord = /\S/.test(t)
+			tokens.push({ text: t, isWord, refIdx: isWord ? wordIdx++ : undefined })
+		}
+	} else {
+		for (const ch of children.split('')) {
+			const isWord = ch !== ' '
+			tokens.push({ text: ch, isWord, refIdx: isWord ? wordIdx++ : undefined })
+		}
+	}
+
+	// Keep ref array sized correctly
+	wordSpansRef.current = wordSpansRef.current.slice(0, wordIdx)
 
 	return (
 		<span className={className} style={style} aria-label={children}>
-			{chars.map((char, i) => (
-				<span
-					key={i}
-					aria-hidden="true"
-					ref={(el) => { spansRef.current[i] = el }}
-					style={{ display: 'inline', fontVariationSettings: buildVS(minWeight) }}
-				>
-					{char === ' ' ? ' ' : char}
-				</span>
-			))}
+			{tokens.map((token, i) =>
+				token.isWord ? (
+					<span
+						key={i}
+						aria-hidden="true"
+						ref={(el) => { wordSpansRef.current[token.refIdx!] = el }}
+						style={{ display: 'inline', fontVariationSettings: buildVS(minWeight) }}
+					>
+						{token.text}
+					</span>
+				) : (
+					<span key={i} aria-hidden="true">{token.text}</span>
+				),
+			)}
 		</span>
 	)
 }

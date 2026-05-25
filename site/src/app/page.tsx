@@ -163,7 +163,7 @@ export default function Home() {
 				<p className="text-xs uppercase tracking-widest opacity-50">How it works</p>
 				<div className="grid grid-cols-1 sm:grid-cols-2 gap-12 text-sm leading-relaxed opacity-70 prose-grid">
 					<div className="flex flex-col gap-3">
-						<p className="font-semibold opacity-100 text-base">Start from named instances</p>
+						<p className="font-semibold opacity-100 text-base"><MagnetText splitBy="word" minWeight={300} maxWeight={800} radius={160} fixedAxes={{ opsz: 144 }}>Start from named instances</MagnetText></p>
 						<p>
 							Variable fonts ship with named instances — presets like Regular, Bold, or Condensed
 							that map to specific axis coordinates. Use <code className="text-xs font-mono">getInstances()</code> to
@@ -172,7 +172,7 @@ export default function Home() {
 						</p>
 					</div>
 					<div className="flex flex-col gap-3">
-						<p className="font-semibold opacity-100 text-base">Pin an axis to remove it</p>
+						<p className="font-semibold opacity-100 text-base"><MagnetText splitBy="word" minWeight={300} maxWeight={800} radius={160} fixedAxes={{ opsz: 144 }}>Pin an axis to remove it</MagnetText></p>
 						<p>
 							Setting an axis to a number fixes it at that value and removes it from the
 							output font&rsquo;s fvar table. Unused glyph masters and gvar deltas are
@@ -180,7 +180,7 @@ export default function Home() {
 						</p>
 					</div>
 					<div className="flex flex-col gap-3">
-						<p className="font-semibold opacity-100 text-base">Range-restrict to slim the space</p>
+						<p className="font-semibold opacity-100 text-base"><MagnetText splitBy="word" minWeight={300} maxWeight={800} radius={160} fixedAxes={{ opsz: 144 }}>Range-restrict to slim the space</MagnetText></p>
 						<p>
 							Passing <code className="text-xs font-mono">&#123; min, max &#125;</code> keeps
 							the axis variable but clips it to that sub-range. Masters outside the bounds are
@@ -189,7 +189,7 @@ export default function Home() {
 						</p>
 					</div>
 					<div className="flex flex-col gap-3">
-						<p className="font-semibold opacity-100 text-base">No Python, multiple outputs</p>
+						<p className="font-semibold opacity-100 text-base"><MagnetText splitBy="word" minWeight={300} maxWeight={800} radius={160} fixedAxes={{ opsz: 144 }}>No Python, multiple outputs</MagnetText></p>
 						<p>
 							fonttools runs inside Pyodide — a Python interpreter compiled to WebAssembly.
 							One <code className="text-xs font-mono">clampFont()</code> call produces any number
@@ -345,7 +345,7 @@ X-API-Key: <your-key>
 				<p className="text-xs uppercase tracking-widest opacity-50">Limitations</p>
 				<div className="grid grid-cols-1 sm:grid-cols-2 gap-8 text-sm leading-relaxed opacity-70">
 					<div className="flex flex-col gap-2">
-						<p className="font-semibold opacity-100">Named instances must exist</p>
+						<p className="font-semibold opacity-100"><MagnetText splitBy="word" minWeight={300} maxWeight={800} radius={160} fixedAxes={{ opsz: 144 }}>Named instances must exist</MagnetText></p>
 						<p>
 							The <code className="text-xs font-mono">instances</code> path looks up coordinates
 							by name from the font&rsquo;s fvar table. If a name doesn&rsquo;t match exactly,
@@ -354,7 +354,7 @@ X-API-Key: <your-key>
 						</p>
 					</div>
 					<div className="flex flex-col gap-2">
-						<p className="font-semibold opacity-100">Isolated selections produce static-like output</p>
+						<p className="font-semibold opacity-100"><MagnetText splitBy="word" minWeight={300} maxWeight={800} radius={160} fixedAxes={{ opsz: 144 }}>Isolated selections produce static-like output</MagnetText></p>
 						<p>
 							An output built from a single named instance — or from instances that all share the
 							same coordinates — pins every axis and removes it from the design space. The result
@@ -363,7 +363,7 @@ X-API-Key: <your-key>
 						</p>
 					</div>
 					<div className="flex flex-col gap-2">
-						<p className="font-semibold opacity-100">Cold start latency</p>
+						<p className="font-semibold opacity-100"><MagnetText splitBy="word" minWeight={300} maxWeight={800} radius={160} fixedAxes={{ opsz: 144 }}>Cold start latency</MagnetText></p>
 						<p>
 							Pyodide (the Python WASM runtime) takes ~10 s to initialise on first use per
 							process. Subsequent calls are fast. On vfclamp.com the engine is kept warm with
@@ -371,7 +371,7 @@ X-API-Key: <your-key>
 						</p>
 					</div>
 					<div className="flex flex-col gap-2">
-						<p className="font-semibold opacity-100">Default axis value clamping</p>
+						<p className="font-semibold opacity-100"><MagnetText splitBy="word" minWeight={300} maxWeight={800} radius={160} fixedAxes={{ opsz: 144 }}>Default axis value clamping</MagnetText></p>
 						<p>
 							If you restrict an axis to a range that excludes its default value — for example,
 							restricting <code className="text-xs font-mono">wght</code> to 100–300 when the font&rsquo;s
@@ -381,7 +381,7 @@ X-API-Key: <your-key>
 						</p>
 					</div>
 					<div className="flex flex-col gap-2">
-						<p className="font-semibold opacity-100">CFF2 variable fonts</p>
+						<p className="font-semibold opacity-100"><MagnetText splitBy="word" minWeight={300} maxWeight={800} radius={160} fixedAxes={{ opsz: 144 }}>CFF2 variable fonts</MagnetText></p>
 						<p>
 							fonttools&rsquo; varLib.instancer has limited support for OTF/CFF2-based variable
 							fonts. TTF (glyf + gvar) is fully supported. Most variable fonts shipping today
@@ -390,7 +390,7 @@ X-API-Key: <your-key>
 						</p>
 					</div>
 					<div className="flex flex-col gap-2">
-						<p className="font-semibold opacity-100">Output size</p>
+						<p className="font-semibold opacity-100"><MagnetText splitBy="word" minWeight={300} maxWeight={800} radius={160} fixedAxes={{ opsz: 144 }}>Output size</MagnetText></p>
 						<p>
 							How much a clamped font shrinks depends on the source. Fonts with many
 							intermediate masters across a wide axis range compress well; fonts with few
@@ -398,7 +398,7 @@ X-API-Key: <your-key>
 						</p>
 					</div>
 					<div className="flex flex-col gap-2">
-						<p className="font-semibold opacity-100">Single-threaded processing</p>
+						<p className="font-semibold opacity-100"><MagnetText splitBy="word" minWeight={300} maxWeight={800} radius={160} fixedAxes={{ opsz: 144 }}>Single-threaded processing</MagnetText></p>
 						<p>
 							Pyodide runs on a single thread. Multiple concurrent <code className="text-xs font-mono">clampFont()</code> calls
 							queue behind each other. For batch workloads, process fonts sequentially or
