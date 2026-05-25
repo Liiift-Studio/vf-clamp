@@ -4,7 +4,7 @@ import CopyInstall from "../components/CopyInstall"
 import SiteFooter from "../components/SiteFooter"
 import Demo from "../components/Demo"
 import MagnetText from "../components/MagnetText"
-import MagnetBlock from "../components/MagnetBlock"
+import { MagnetBlock } from "@liiift-studio/magnettype"
 import { version } from "../../../package.json"
 import { version as siteVersion } from "../../package.json"
 
@@ -38,7 +38,7 @@ export default function Home() {
 					<span>Pyodide WASM</span><span>·</span>
 					<span>TTF · OTF · WOFF · WOFF2</span>
 				</div>
-				<MagnetBlock className="text-base opacity-60 leading-relaxed max-w-lg" minWeight={300} maxWeight={600} proximityRadius={20}>
+				<MagnetBlock className="text-base opacity-60 leading-relaxed max-w-lg" minWeight={300} maxWeight={600} spreadRadius={20}>
 					vf-clamp wraps fonttools&rsquo; varLib.instancer in a zero-install WASM runtime.
 					Pass in a variable font and a map of axis constraints — pin an axis to remove it,
 					restrict it to a sub-range, or leave it untouched. The output is a smaller,
@@ -49,7 +49,7 @@ export default function Home() {
 			{/* Interactive demo */}
 		<section className="w-full max-w-2xl lg:max-w-5xl flex flex-col gap-4">
 			<p className="text-xs uppercase tracking-widest opacity-50"><MagnetText minWeight={300} maxWeight={700} radius={120}>Interactive demo</MagnetText></p>
-			<MagnetBlock className="text-sm opacity-50 leading-relaxed max-w-lg" minWeight={300} maxWeight={600} proximityRadius={20}>
+			<MagnetBlock className="text-sm opacity-50 leading-relaxed max-w-lg" minWeight={300} maxWeight={600} spreadRadius={20}>
 				Load Encode Sans or drop any variable font. Select named instances — adjacent selections
 				merge into a single output file. Isolated selections generate their own file, flagged in yellow.
 				Preview the restricted design space live, then download the clamped TTFs.
@@ -62,7 +62,7 @@ export default function Home() {
 			{/* Integrations */}
 			<section className="w-full max-w-2xl lg:max-w-5xl flex flex-col gap-6">
 				<p className="text-xs uppercase tracking-widest opacity-50"><MagnetText minWeight={300} maxWeight={700} radius={120}>Integrations</MagnetText></p>
-				<MagnetBlock className="text-sm opacity-60 leading-relaxed max-w-lg" minWeight={300} maxWeight={600} proximityRadius={20}>
+				<MagnetBlock className="text-sm opacity-60 leading-relaxed max-w-lg" minWeight={300} maxWeight={600} spreadRadius={20}>
 					vf-clamp is available as a CLI, and as native plugins for Glyphs.app, RoboFont, and VS Code —
 					all using the same axis-constraint model as the npm package.
 				</MagnetBlock>
@@ -77,7 +77,7 @@ export default function Home() {
 							</svg>
 							<span className="text-sm font-medium"><MagnetText minWeight={300} maxWeight={700} radius={100}>CLI</MagnetText></span>
 						</div>
-						<MagnetBlock className="text-xs opacity-50 leading-relaxed" minWeight={300} maxWeight={600} proximityRadius={20}>
+						<MagnetBlock className="text-xs opacity-50 leading-relaxed" minWeight={300} maxWeight={600} spreadRadius={20}>
 							Run <code className="font-mono">vf-clamp</code> from any shell. Pass a font file, a JSON config, and get clamped outputs written to disk. Scriptable and CI-friendly.
 						</MagnetBlock>
 						<code className="text-xs font-mono opacity-40">vf-clamp clamp font.ttf --axis wght:400:700</code>
@@ -102,7 +102,7 @@ export default function Home() {
 							</svg>
 							<span className="text-sm font-medium"><MagnetText minWeight={300} maxWeight={700} radius={100}>Glyphs.app</MagnetText></span>
 						</div>
-						<MagnetBlock className="text-xs opacity-50 leading-relaxed" minWeight={300} maxWeight={600} proximityRadius={20}>
+						<MagnetBlock className="text-xs opacity-50 leading-relaxed" minWeight={300} maxWeight={600} spreadRadius={20}>
 							Native Glyphs plugin. Select named instances from your open font, choose a format, and export restricted VFs — all without leaving the app.
 						</MagnetBlock>
 						<code className="text-xs font-mono opacity-40">vf-clamp-glyphs.glyphsPlugin</code>
@@ -126,7 +126,7 @@ export default function Home() {
 							</svg>
 							<span className="text-sm font-medium"><MagnetText minWeight={300} maxWeight={700} radius={100}>RoboFont</MagnetText></span>
 						</div>
-						<MagnetBlock className="text-xs opacity-50 leading-relaxed" minWeight={300} maxWeight={600} proximityRadius={20}>
+						<MagnetBlock className="text-xs opacity-50 leading-relaxed" minWeight={300} maxWeight={600} spreadRadius={20}>
 							RoboFont extension using fonttools directly. Pick instances from any open UFO-based variable font and export clamped outputs from the Extensions menu.
 						</MagnetBlock>
 						<code className="text-xs font-mono opacity-40">vf-clamp.roboFontExt</code>
@@ -146,7 +146,7 @@ export default function Home() {
 							</svg>
 							<span className="text-sm font-medium"><MagnetText minWeight={300} maxWeight={700} radius={100}>VS Code</MagnetText></span>
 						</div>
-						<MagnetBlock className="text-xs opacity-50 leading-relaxed" minWeight={300} maxWeight={600} proximityRadius={20}>
+						<MagnetBlock className="text-xs opacity-50 leading-relaxed" minWeight={300} maxWeight={600} spreadRadius={20}>
 							Right-click any <code className="font-mono">.ttf</code> in the Explorer to open the vf-clamp panel. Select instances, preview the axis hull, and export — without leaving your editor.
 						</MagnetBlock>
 						<code className="text-xs font-mono opacity-40">vf-clamp.vscode-extension</code>
@@ -165,7 +165,7 @@ export default function Home() {
 				<div className="grid grid-cols-1 sm:grid-cols-2 gap-12 text-sm leading-relaxed opacity-70 prose-grid">
 					<div className="flex flex-col gap-3">
 						<p className="font-semibold opacity-100 text-base"><MagnetText splitBy="word" minWeight={300} maxWeight={800} radius={20} fixedAxes={{ opsz: 144 }}>Start from named instances</MagnetText></p>
-						<MagnetBlock minWeight={300} maxWeight={600} proximityRadius={20}>
+						<MagnetBlock minWeight={300} maxWeight={600} spreadRadius={20}>
 							Variable fonts ship with named instances — presets like Regular, Bold, or Condensed
 							that map to specific axis coordinates. Use <code className="text-xs font-mono">getInstances()</code> to
 							read them, then pass adjacent instances as a subfamily to produce a restricted VF that
@@ -174,7 +174,7 @@ export default function Home() {
 					</div>
 					<div className="flex flex-col gap-3">
 						<p className="font-semibold opacity-100 text-base"><MagnetText splitBy="word" minWeight={300} maxWeight={800} radius={20} fixedAxes={{ opsz: 144 }}>Pin an axis to remove it</MagnetText></p>
-						<MagnetBlock minWeight={300} maxWeight={600} proximityRadius={20}>
+						<MagnetBlock minWeight={300} maxWeight={600} spreadRadius={20}>
 							Setting an axis to a number fixes it at that value and removes it from the
 							output font&rsquo;s fvar table. Unused glyph masters and gvar deltas are
 							stripped — the result is a smaller, static-like font with no unnecessary variation.
@@ -182,7 +182,7 @@ export default function Home() {
 					</div>
 					<div className="flex flex-col gap-3">
 						<p className="font-semibold opacity-100 text-base"><MagnetText splitBy="word" minWeight={300} maxWeight={800} radius={20} fixedAxes={{ opsz: 144 }}>Range-restrict to slim the space</MagnetText></p>
-						<MagnetBlock minWeight={300} maxWeight={600} proximityRadius={20}>
+						<MagnetBlock minWeight={300} maxWeight={600} spreadRadius={20}>
 							Passing <code className="text-xs font-mono">&#123; min, max &#125;</code> keeps
 							the axis variable but clips it to that sub-range. Masters outside the bounds are
 							pruned — a 100–900 weight axis becomes a tight 400–700 slice without changing
@@ -191,7 +191,7 @@ export default function Home() {
 					</div>
 					<div className="flex flex-col gap-3">
 						<p className="font-semibold opacity-100 text-base"><MagnetText splitBy="word" minWeight={300} maxWeight={800} radius={20} fixedAxes={{ opsz: 144 }}>No Python, multiple outputs</MagnetText></p>
-						<MagnetBlock minWeight={300} maxWeight={600} proximityRadius={20}>
+						<MagnetBlock minWeight={300} maxWeight={600} spreadRadius={20}>
 							fonttools runs inside Pyodide — a Python interpreter compiled to WebAssembly.
 							One <code className="text-xs font-mono">clampFont()</code> call produces any number
 							of restricted variants from the same source. The Pyodide instance is a shared
@@ -207,7 +207,7 @@ export default function Home() {
 				<div className="flex flex-col gap-8 text-sm">
 
 					<div className="flex flex-col gap-3">
-						<MagnetBlock className="opacity-50" minWeight={300} maxWeight={600} proximityRadius={20}>From named instances — hull computed automatically</MagnetBlock>
+						<MagnetBlock className="opacity-50" minWeight={300} maxWeight={600} spreadRadius={20}>From named instances — hull computed automatically</MagnetBlock>
 						<CodeBlock code={`import { clampFont } from '@liiift-studio/vf-clamp'
 import { readFile, writeFile } from 'fs/promises'
 
@@ -234,7 +234,7 @@ for (const result of results) {
 					</div>
 
 					<div className="flex flex-col gap-3">
-						<MagnetBlock className="opacity-50" minWeight={300} maxWeight={600} proximityRadius={20}>From explicit axis ranges</MagnetBlock>
+						<MagnetBlock className="opacity-50" minWeight={300} maxWeight={600} spreadRadius={20}>From explicit axis ranges</MagnetBlock>
 						<CodeBlock code={`const results = await clampFont(source, {
   outputs: [
     // pin wdth to 75 — axis removed from output
@@ -247,7 +247,7 @@ for (const result of results) {
 					</div>
 
 					<div className="flex flex-col gap-3">
-						<MagnetBlock className="opacity-50" minWeight={300} maxWeight={600} proximityRadius={20}>Mix instances and axes — axes override the hull</MagnetBlock>
+						<MagnetBlock className="opacity-50" minWeight={300} maxWeight={600} spreadRadius={20}>Mix instances and axes — axes override the hull</MagnetBlock>
 						<CodeBlock code={`const results = await clampFont(source, {
   format: 'woff2',
   outputs: [
@@ -262,7 +262,7 @@ for (const result of results) {
 					</div>
 
 					<div className="flex flex-col gap-3">
-						<MagnetBlock className="opacity-50" minWeight={300} maxWeight={600} proximityRadius={20}>CLI — from the shell</MagnetBlock>
+						<MagnetBlock className="opacity-50" minWeight={300} maxWeight={600} spreadRadius={20}>CLI — from the shell</MagnetBlock>
 						<CodeBlock code={`# Pin wght, restrict wdth, keep all other axes
 npx @liiift-studio/vf-clamp-cli clamp font.ttf \\
   --output out/ \\
@@ -276,7 +276,7 @@ npx @liiift-studio/vf-clamp-cli clamp font.ttf \\
 					</div>
 
 					<div className="flex flex-col gap-3">
-						<MagnetBlock className="opacity-50" minWeight={300} maxWeight={600} proximityRadius={20}>Axis value reference</MagnetBlock>
+						<MagnetBlock className="opacity-50" minWeight={300} maxWeight={600} spreadRadius={20}>Axis value reference</MagnetBlock>
 						<table className="w-full text-xs">
 							<thead>
 								<tr className="opacity-50 text-left">
@@ -299,7 +299,7 @@ npx @liiift-studio/vf-clamp-cli clamp font.ttf \\
 			{/* Inspect a font */}
 			<section className="w-full max-w-2xl lg:max-w-5xl flex flex-col gap-6">
 				<p className="text-xs uppercase tracking-widest opacity-50"><MagnetText minWeight={300} maxWeight={700} radius={120}>Inspect a font</MagnetText></p>
-				<MagnetBlock className="text-sm opacity-60 leading-relaxed max-w-lg" minWeight={300} maxWeight={600} proximityRadius={20}>
+				<MagnetBlock className="text-sm opacity-60 leading-relaxed max-w-lg" minWeight={300} maxWeight={600} spreadRadius={20}>
 					<code className="text-xs font-mono">getInstances()</code> reads the fvar table and returns every axis
 					and named instance defined in the font — useful for discovering what can be clamped
 					before building a subfamily config.
@@ -317,7 +317,7 @@ const { axes, instances } = await getInstances(font)
 			{/* REST API */}
 			<section className="w-full max-w-2xl lg:max-w-5xl flex flex-col gap-6">
 				<p className="text-xs uppercase tracking-widest opacity-50"><MagnetText minWeight={300} maxWeight={700} radius={120}>REST API</MagnetText></p>
-				<MagnetBlock className="text-sm opacity-60 leading-relaxed max-w-lg" minWeight={300} maxWeight={600} proximityRadius={20}>
+				<MagnetBlock className="text-sm opacity-60 leading-relaxed max-w-lg" minWeight={300} maxWeight={600} spreadRadius={20}>
 					vfclamp.com exposes two endpoints for server-to-server use. Both require an API key.
 					Contact <a href="mailto:hello@liiift.studio" className="opacity-100 hover:underline underline-offset-2">hello@liiift.studio</a> to request access.
 				</MagnetBlock>
@@ -347,7 +347,7 @@ X-API-Key: <your-key>
 				<div className="grid grid-cols-1 sm:grid-cols-2 gap-8 text-sm leading-relaxed opacity-70">
 					<div className="flex flex-col gap-2">
 						<p className="font-semibold opacity-100"><MagnetText splitBy="word" minWeight={300} maxWeight={800} radius={20} fixedAxes={{ opsz: 144 }}>Named instances must exist</MagnetText></p>
-						<MagnetBlock minWeight={300} maxWeight={600} proximityRadius={20}>
+						<MagnetBlock minWeight={300} maxWeight={600} spreadRadius={20}>
 							The <code className="text-xs font-mono">instances</code> path looks up coordinates
 							by name from the font&rsquo;s fvar table. If a name doesn&rsquo;t match exactly,
 							clampFont throws. Use <code className="text-xs font-mono">getInstances()</code> to
@@ -356,7 +356,7 @@ X-API-Key: <your-key>
 					</div>
 					<div className="flex flex-col gap-2">
 						<p className="font-semibold opacity-100"><MagnetText splitBy="word" minWeight={300} maxWeight={800} radius={20} fixedAxes={{ opsz: 144 }}>Isolated selections produce static-like output</MagnetText></p>
-						<MagnetBlock minWeight={300} maxWeight={600} proximityRadius={20}>
+						<MagnetBlock minWeight={300} maxWeight={600} spreadRadius={20}>
 							An output built from a single named instance — or from instances that all share the
 							same coordinates — pins every axis and removes it from the design space. The result
 							is a minimal font with no variation, not a variable font. Select at least two
@@ -365,7 +365,7 @@ X-API-Key: <your-key>
 					</div>
 					<div className="flex flex-col gap-2">
 						<p className="font-semibold opacity-100"><MagnetText splitBy="word" minWeight={300} maxWeight={800} radius={20} fixedAxes={{ opsz: 144 }}>Cold start latency</MagnetText></p>
-						<MagnetBlock minWeight={300} maxWeight={600} proximityRadius={20}>
+						<MagnetBlock minWeight={300} maxWeight={600} spreadRadius={20}>
 							Pyodide (the Python WASM runtime) takes ~10 s to initialise on first use per
 							process. Subsequent calls are fast. On vfclamp.com the engine is kept warm with
 							a cron ping — cold starts mainly affect self-hosted or edge deployments.
@@ -373,7 +373,7 @@ X-API-Key: <your-key>
 					</div>
 					<div className="flex flex-col gap-2">
 						<p className="font-semibold opacity-100"><MagnetText splitBy="word" minWeight={300} maxWeight={800} radius={20} fixedAxes={{ opsz: 144 }}>Default axis value clamping</MagnetText></p>
-						<MagnetBlock minWeight={300} maxWeight={600} proximityRadius={20}>
+						<MagnetBlock minWeight={300} maxWeight={600} spreadRadius={20}>
 							If you restrict an axis to a range that excludes its default value — for example,
 							restricting <code className="text-xs font-mono">wght</code> to 100–300 when the font&rsquo;s
 							default is 400 — fonttools silently clamps the default to the nearest bound.
@@ -383,7 +383,7 @@ X-API-Key: <your-key>
 					</div>
 					<div className="flex flex-col gap-2">
 						<p className="font-semibold opacity-100"><MagnetText splitBy="word" minWeight={300} maxWeight={800} radius={20} fixedAxes={{ opsz: 144 }}>CFF2 variable fonts</MagnetText></p>
-						<MagnetBlock minWeight={300} maxWeight={600} proximityRadius={20}>
+						<MagnetBlock minWeight={300} maxWeight={600} spreadRadius={20}>
 							fonttools&rsquo; varLib.instancer has limited support for OTF/CFF2-based variable
 							fonts. TTF (glyf + gvar) is fully supported. Most variable fonts shipping today
 							are TTF-based, but if your font uses CFF2 outlines the instancer may error or
@@ -392,7 +392,7 @@ X-API-Key: <your-key>
 					</div>
 					<div className="flex flex-col gap-2">
 						<p className="font-semibold opacity-100"><MagnetText splitBy="word" minWeight={300} maxWeight={800} radius={20} fixedAxes={{ opsz: 144 }}>Output size</MagnetText></p>
-						<MagnetBlock minWeight={300} maxWeight={600} proximityRadius={20}>
+						<MagnetBlock minWeight={300} maxWeight={600} spreadRadius={20}>
 							How much a clamped font shrinks depends on the source. Fonts with many
 							intermediate masters across a wide axis range compress well; fonts with few
 							masters may see little size reduction regardless of the range specified.
@@ -400,7 +400,7 @@ X-API-Key: <your-key>
 					</div>
 					<div className="flex flex-col gap-2">
 						<p className="font-semibold opacity-100"><MagnetText splitBy="word" minWeight={300} maxWeight={800} radius={20} fixedAxes={{ opsz: 144 }}>Single-threaded processing</MagnetText></p>
-						<MagnetBlock minWeight={300} maxWeight={600} proximityRadius={20}>
+						<MagnetBlock minWeight={300} maxWeight={600} spreadRadius={20}>
 							Pyodide runs on a single thread. Multiple concurrent <code className="text-xs font-mono">clampFont()</code> calls
 							queue behind each other. For batch workloads, process fonts sequentially or
 							spread calls across multiple Node.js processes.
