@@ -14,7 +14,7 @@ export default function Home() {
 			{/* Hero */}
 			<section className="w-full max-w-2xl lg:max-w-5xl flex flex-col gap-6">
 				<div className="flex flex-col gap-2">
-					<p className="text-xs uppercase tracking-widest opacity-50">vf-clamp</p>
+					<p className="text-xs uppercase tracking-widest opacity-50"><MagnetText minWeight={300} maxWeight={700} radius={120}>vf-clamp</MagnetText></p>
 					<h1 className="text-4xl lg:text-8xl xl:text-9xl" style={{ fontFamily: "var(--font-merriweather), serif", fontVariationSettings: '"wght" 300, "opsz" 144', lineHeight: "1.05em" }}>
 						<MagnetText minWeight={300} maxWeight={800} radius={220} fixedAxes={{ opsz: 144 }}>Restrict the range,</MagnetText><br />
 						<MagnetText minWeight={300} maxWeight={800} radius={220} fixedAxes={{ opsz: 144 }} style={{ opacity: 0.5, fontStyle: "italic" }}>keep what varies.</MagnetText>
@@ -47,7 +47,7 @@ export default function Home() {
 
 			{/* Interactive demo */}
 		<section className="w-full max-w-2xl lg:max-w-5xl flex flex-col gap-4">
-			<p className="text-xs uppercase tracking-widest opacity-50">Interactive demo</p>
+			<p className="text-xs uppercase tracking-widest opacity-50"><MagnetText minWeight={300} maxWeight={700} radius={120}>Interactive demo</MagnetText></p>
 			<p className="text-sm opacity-50 leading-relaxed max-w-lg">
 				Load Encode Sans or drop any variable font. Select named instances — adjacent selections
 				merge into a single output file. Isolated selections generate their own file, flagged in yellow.
@@ -60,7 +60,7 @@ export default function Home() {
 
 			{/* Integrations */}
 			<section className="w-full max-w-2xl lg:max-w-5xl flex flex-col gap-6">
-				<p className="text-xs uppercase tracking-widest opacity-50">Integrations</p>
+				<p className="text-xs uppercase tracking-widest opacity-50"><MagnetText minWeight={300} maxWeight={700} radius={120}>Integrations</MagnetText></p>
 				<p className="text-sm opacity-60 leading-relaxed max-w-lg">
 					vf-clamp is available as a CLI, and as native plugins for Glyphs.app, RoboFont, and VS Code —
 					all using the same axis-constraint model as the npm package.
@@ -74,7 +74,7 @@ export default function Home() {
 								<polyline points="4 17 10 11 4 5" />
 								<line x1="12" y1="19" x2="20" y2="19" />
 							</svg>
-							<span className="text-sm font-medium">CLI</span>
+							<span className="text-sm font-medium"><MagnetText minWeight={300} maxWeight={700} radius={100}>CLI</MagnetText></span>
 						</div>
 						<p className="text-xs opacity-50 leading-relaxed">
 							Run <code className="font-mono">vf-clamp</code> from any shell. Pass a font file, a JSON config, and get clamped outputs written to disk. Scriptable and CI-friendly.
@@ -99,7 +99,7 @@ export default function Home() {
 								<circle cx="3" cy="8" r="1.5" fill="none" stroke="currentColor" strokeWidth="1" opacity="0.65"/>
 								<circle cx="8" cy="3" r="1.5" fill="none" stroke="currentColor" strokeWidth="1" opacity="0.65"/>
 							</svg>
-							<span className="text-sm font-medium">Glyphs.app</span>
+							<span className="text-sm font-medium"><MagnetText minWeight={300} maxWeight={700} radius={100}>Glyphs.app</MagnetText></span>
 						</div>
 						<p className="text-xs opacity-50 leading-relaxed">
 							Native Glyphs plugin. Select named instances from your open font, choose a format, and export restricted VFs — all without leaving the app.
@@ -123,7 +123,7 @@ export default function Home() {
 								<circle cx="11.5" cy="11.5" r="1.5" fill="currentColor" stroke="none"/>
 								<path d="M6 14.5h6" strokeWidth="1.4" strokeLinecap="round"/>
 							</svg>
-							<span className="text-sm font-medium">RoboFont</span>
+							<span className="text-sm font-medium"><MagnetText minWeight={300} maxWeight={700} radius={100}>RoboFont</MagnetText></span>
 						</div>
 						<p className="text-xs opacity-50 leading-relaxed">
 							RoboFont extension using fonttools directly. Pick instances from any open UFO-based variable font and export clamped outputs from the Extensions menu.
@@ -143,7 +143,7 @@ export default function Home() {
 								<path d="M13 2.5L4.5 10.5l3 1.5L13 2.5z"/>
 								<path d="M4.5 15.5l8.5-3V2.5L4.5 10.5v5z"/>
 							</svg>
-							<span className="text-sm font-medium">VS Code</span>
+							<span className="text-sm font-medium"><MagnetText minWeight={300} maxWeight={700} radius={100}>VS Code</MagnetText></span>
 						</div>
 						<p className="text-xs opacity-50 leading-relaxed">
 							Right-click any <code className="font-mono">.ttf</code> in the Explorer to open the vf-clamp panel. Select instances, preview the axis hull, and export — without leaving your editor.
@@ -160,7 +160,7 @@ export default function Home() {
 
 		{/* How it works */}
 			<section className="w-full max-w-2xl lg:max-w-5xl flex flex-col gap-6">
-				<p className="text-xs uppercase tracking-widest opacity-50">How it works</p>
+				<p className="text-xs uppercase tracking-widest opacity-50"><MagnetText minWeight={300} maxWeight={700} radius={120}>How it works</MagnetText></p>
 				<div className="grid grid-cols-1 sm:grid-cols-2 gap-12 text-sm leading-relaxed opacity-70 prose-grid">
 					<div className="flex flex-col gap-3">
 						<p className="font-semibold opacity-100 text-base"><MagnetText splitBy="word" minWeight={300} maxWeight={800} radius={160} fixedAxes={{ opsz: 144 }}>Start from named instances</MagnetText></p>
@@ -202,7 +202,7 @@ export default function Home() {
 
 			{/* Usage */}
 			<section className="w-full max-w-2xl lg:max-w-5xl flex flex-col gap-6">
-				<p className="text-xs uppercase tracking-widest opacity-50">Usage</p>
+				<p className="text-xs uppercase tracking-widest opacity-50"><MagnetText minWeight={300} maxWeight={700} radius={120}>Usage</MagnetText></p>
 				<div className="flex flex-col gap-8 text-sm">
 
 					<div className="flex flex-col gap-3">
@@ -297,7 +297,7 @@ npx @liiift-studio/vf-clamp-cli clamp font.ttf \\
 
 			{/* Inspect a font */}
 			<section className="w-full max-w-2xl lg:max-w-5xl flex flex-col gap-6">
-				<p className="text-xs uppercase tracking-widest opacity-50">Inspect a font</p>
+				<p className="text-xs uppercase tracking-widest opacity-50"><MagnetText minWeight={300} maxWeight={700} radius={120}>Inspect a font</MagnetText></p>
 				<p className="text-sm opacity-60 leading-relaxed max-w-lg">
 					<code className="text-xs font-mono">getInstances()</code> reads the fvar table and returns every axis
 					and named instance defined in the font — useful for discovering what can be clamped
@@ -315,7 +315,7 @@ const { axes, instances } = await getInstances(font)
 
 			{/* REST API */}
 			<section className="w-full max-w-2xl lg:max-w-5xl flex flex-col gap-6">
-				<p className="text-xs uppercase tracking-widest opacity-50">REST API</p>
+				<p className="text-xs uppercase tracking-widest opacity-50"><MagnetText minWeight={300} maxWeight={700} radius={120}>REST API</MagnetText></p>
 				<p className="text-sm opacity-60 leading-relaxed max-w-lg">
 					vfclamp.com exposes two endpoints for server-to-server use. Both require an API key.
 					Contact <a href="mailto:hello@liiift.studio" className="opacity-100 hover:underline underline-offset-2">hello@liiift.studio</a> to request access.
@@ -342,7 +342,7 @@ X-API-Key: <your-key>
 
 			{/* Limitations */}
 			<section className="w-full max-w-2xl lg:max-w-5xl flex flex-col gap-6">
-				<p className="text-xs uppercase tracking-widest opacity-50">Limitations</p>
+				<p className="text-xs uppercase tracking-widest opacity-50"><MagnetText minWeight={300} maxWeight={700} radius={120}>Limitations</MagnetText></p>
 				<div className="grid grid-cols-1 sm:grid-cols-2 gap-8 text-sm leading-relaxed opacity-70">
 					<div className="flex flex-col gap-2">
 						<p className="font-semibold opacity-100"><MagnetText splitBy="word" minWeight={300} maxWeight={800} radius={160} fixedAxes={{ opsz: 144 }}>Named instances must exist</MagnetText></p>
