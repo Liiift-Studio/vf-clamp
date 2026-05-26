@@ -1,5 +1,5 @@
 'use client'
-// Lightweight syntax-highlighted code block with copy-to-clipboard
+// Lightweight syntax-highlighted code block with clipboard copy — keywords bold, strings italic, punctuation muted
 import { useState } from 'react'
 import type { ReactNode } from 'react'
 
@@ -20,6 +20,7 @@ function tokenize(code: string): ReactNode[] {
 	let match: RegExpExecArray | null
 
 	while ((match = TOKEN.exec(code)) !== null) {
+		// Plain gap (whitespace, numbers, operators not in punct set)
 		if (match.index > last) {
 			nodes.push(<span key={key++} style={{ opacity: 0.6 }}>{code.slice(last, match.index)}</span>)
 		}
@@ -50,31 +51,28 @@ function tokenize(code: string): ReactNode[] {
 	return nodes
 }
 
-/** Renders a syntax-highlighted code snippet with a copy-to-clipboard button */
+/** Renders a syntax-highlighted code block with a clipboard copy button */
 export default function CodeBlock({ code }: { code: string }) {
 	const [copied, setCopied] = useState(false)
 
-	async function handleCopy() {
-		try {
-			await navigator.clipboard.writeText(code)
+	function copy() {
+		navigator.clipboard.writeText(code).then(() => {
 			setCopied(true)
-			setTimeout(() => setCopied(false), 1800)
-		} catch {
-			// clipboard API unavailable (non-HTTPS or blocked)
-		}
+			setTimeout(() => setCopied(false), 1500)
+		})
 	}
 
 	return (
-		<div className="relative group/codeblock">
-			<pre className="bg-white/5 rounded p-4 overflow-x-auto text-xs leading-relaxed font-mono">
+		<div className="relative rounded-lg px-5 py-4 flex items-center gap-6" style={{ background: 'rgba(0,0,0,0.35)' }}>
+			<pre className="overflow-x-auto text-xs leading-relaxed font-mono flex-1">
 				<code>{tokenize(code)}</code>
 			</pre>
 			<button
-				onClick={handleCopy}
-				aria-label={copied ? 'Copied to clipboard' : 'Copy code to clipboard'}
-				className="absolute top-2 right-2 px-2 py-1 rounded text-[10px] font-mono opacity-0 group-hover/codeblock:opacity-40 hover:!opacity-100 transition-all bg-white/5 hover:bg-white/10 border border-white/10"
+				onClick={copy}
+				className="shrink-0 self-start text-xs opacity-30 hover:opacity-80 transition-opacity font-mono pt-px"
+				aria-label="Copy code to clipboard"
 			>
-				{copied ? 'copied ✓' : 'copy'}
+				{copied ? 'copied' : 'copy'}
 			</button>
 		</div>
 	)
