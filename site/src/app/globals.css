@@ -3,7 +3,7 @@
 @import "./base.css";
 
 :root {
-	--background: hsl(200, 20%, 6%);
+	--background: hsl(193, 55%, 8%);
 	--foreground: #e8f4f8;
 	--accent: rgba(80, 190, 200, 0.85);
 	--font-sans: var(--font-inter), sans-serif;
