@@ -448,6 +448,7 @@ function TextPreview({
 						onChange={(e) => setCustomText(e.target.value)}
 						placeholder="Type here…"
 						rows={2}
+						title="Type custom preview text to render in this output font"
 						style={{ fontFamily: '"vf-demo", sans-serif', fontVariationSettings: midpointSettings, resize: 'none' }}
 						className="w-full bg-transparent text-4xl leading-tight opacity-90 placeholder:opacity-20 focus:outline-none"
 					/>
@@ -464,6 +465,7 @@ function TextPreview({
 			<button
 				onClick={() => setEditing((v) => !v)}
 				aria-label={editing ? 'Finish editing preview text' : 'Edit preview text'}
+				title={editing ? 'Confirm and stop editing preview text' : 'Edit the preview text rendered in this font'}
 				className="shrink-0 mt-2 p-1.5 rounded opacity-25 group-hover/preview:opacity-60 hover:!opacity-100 hover:bg-white/10 transition-all"
 			>
 				{editing ? (
@@ -802,6 +804,7 @@ export default function Demo() {
 								Load{' '}
 								<button
 									onClick={handleLoadDefault}
+									title="Load Encode Sans as the demo variable font"
 									className="underline underline-offset-2 hover:opacity-100 transition-opacity"
 								>
 									Encode Sans
@@ -839,6 +842,7 @@ export default function Demo() {
 						onChange={handleInputChange}
 						className="sr-only"
 						aria-label="Upload a variable font"
+						title="Upload a variable font file (.ttf, .otf, .woff, .woff2) to explore its named instances"
 					/>
 				</label>
 			</div>
@@ -881,6 +885,7 @@ export default function Demo() {
 													onClick={() => toggleInstance(inst.name)}
 													onMouseEnter={() => isIsolated && setTooltip(inst.name)}
 													onMouseLeave={() => setTooltip(null)}
+													title={isSelected ? `Deselect ${inst.name}` : `Select ${inst.name} to include it in the restricted output`}
 													className={[
 														'flex flex-col gap-0.5 px-3 py-2 rounded-lg border text-left transition-all',
 														isIsolated
@@ -918,6 +923,7 @@ export default function Demo() {
 					{selected.size > 0 && (
 						<button
 							onClick={() => setSelected(new Set())}
+							title="Deselect all named instances"
 							className="self-start text-xs opacity-25 hover:opacity-60 transition-opacity"
 						>
 							Clear selection
@@ -931,6 +937,7 @@ export default function Demo() {
 				<div className="flex flex-col gap-3">
 					<button
 						onClick={() => setShowAdvanced((v) => !v)}
+						title={showAdvanced ? 'Hide advanced axis range controls' : 'Show controls to manually set axis ranges not covered by named instances'}
 						className="self-start flex items-center gap-1.5 text-xs opacity-30 hover:opacity-60 transition-opacity"
 					>
 						<span>{showAdvanced ? '▾' : '▸'}</span>
@@ -961,6 +968,7 @@ export default function Demo() {
 													const min = Math.max(axis.minimum, Math.min(Number(e.target.value), curMax))
 													setAxisOverrides((prev) => ({ ...prev, [axis.tag]: { min, max: curMax } }))
 												}}
+												title={`Minimum value for the ${axis.name} (${axis.tag}) axis in all output files (range: ${axis.minimum}–${axis.maximum})`}
 												className="w-20 bg-white/5 border border-white/10 rounded px-2 py-1 font-mono text-center focus:outline-none focus:border-white/30 transition-colors"
 											/>
 											<span className="opacity-20">–</span>
@@ -973,6 +981,7 @@ export default function Demo() {
 													const max = Math.min(axis.maximum, Math.max(Number(e.target.value), curMin))
 													setAxisOverrides((prev) => ({ ...prev, [axis.tag]: { min: curMin, max } }))
 												}}
+												title={`Maximum value for the ${axis.name} (${axis.tag}) axis in all output files (range: ${axis.minimum}–${axis.maximum})`}
 												className="w-20 bg-white/5 border border-white/10 rounded px-2 py-1 font-mono text-center focus:outline-none focus:border-white/30 transition-colors"
 											/>
 										</div>
@@ -982,6 +991,7 @@ export default function Demo() {
 												onClick={() => setAxisOverrides((prev) => { const next = { ...prev }; delete next[axis.tag]; return next })}
 												className="opacity-20 hover:opacity-60 transition-opacity"
 												aria-label={`Reset ${axis.name}`}
+												title={`Reset ${axis.name} (${axis.tag}) to its default value`}
 											>
 												×
 											</button>
@@ -1073,6 +1083,7 @@ export default function Demo() {
 									<div className="flex flex-col gap-2">
 										<button
 											onClick={() => setExpandedNameTable(expandedNameTable === i ? null : i)}
+											title={expandedNameTable === i ? 'Hide the OpenType name table for this output file' : 'Show the OpenType name table embedded in this downloaded file'}
 											className="self-start flex items-center gap-1 text-[10px] opacity-30 hover:opacity-60 transition-opacity"
 										>
 											<span>{expandedNameTable === i ? '▾' : '▸'}</span>
@@ -1111,6 +1122,7 @@ export default function Demo() {
 							<button
 								onClick={handleDownload}
 								disabled={processing}
+								title={processing ? 'Processing — please wait' : `Send the selected instances to the server and download ${groups.length === 1 ? '1 axis-restricted font file' : `${groups.length} axis-restricted font files`}`}
 								className="text-sm px-5 py-2.5 rounded-full border border-white/20 hover:bg-white/5 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
 							>
 								{processing
@@ -1124,6 +1136,12 @@ export default function Demo() {
 										<button
 											key={fmt}
 											onClick={() => setOutputFormat(fmt)}
+											title={
+												fmt === 'ttf'  ? 'Download as TrueType (.ttf) — best for desktop use' :
+												fmt === 'otf'  ? 'Download as OpenType CFF (.otf) — PostScript outlines, desktop use' :
+												fmt === 'woff' ? 'Download as WOFF (.woff) — compressed, for web use' :
+												                 'Download as WOFF2 (.woff2) — best compression, for web use'
+											}
 											className={[
 												'px-3 py-1.5 font-mono transition-colors',
 												outputFormat === fmt
@@ -1165,6 +1183,7 @@ export default function Demo() {
 					<div className="flex flex-col gap-3">
 						<button
 							onClick={() => setShowCode((v) => !v)}
+							title={showCode ? 'Hide the npm code snippet' : 'Show the vf-clamp npm code snippet that reproduces this configuration'}
 							className="self-start text-xs px-3 py-1.5 rounded-full border border-white/15 hover:bg-white/5 transition-colors opacity-60 hover:opacity-100"
 						>
 							{showCode ? 'Hide code' : 'See code'}
