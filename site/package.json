@@ -10,7 +10,7 @@
 	},
 	"dependencies": {
 		"@liiift-studio/magnettype": "^1.2.0",
-		"@liiift-studio/typsettle": "^1.0.12",
+		"@liiift-studio/typsettle": "^1.0.13",
 		"@liiift-studio/vf-clamp": "^2.0.1",
 		"@sanity/client": "^7.22.0",
 		"next": "16.2.2",
