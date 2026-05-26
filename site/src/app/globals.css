@@ -4,7 +4,7 @@
 
 :root {
 	--background: hsl(263, 55%, 9%);
-	--foreground: #e8f4f8;
+	--foreground: hsl(263, 15%, 92%);
 	--accent: rgba(80, 190, 200, 0.85);
 	--font-sans: var(--font-inter), sans-serif;
 }
