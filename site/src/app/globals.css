@@ -3,7 +3,7 @@
 @import "./base.css";
 
 :root {
-	--background: oklch(0.1 0.03 263);
+	--background: oklch(0.12 0.0400 263);
 	--foreground: oklch(0.93 0.03 263);
 	--accent: rgba(80, 190, 200, 0.85);
 	--font-sans: var(--font-inter), sans-serif;
