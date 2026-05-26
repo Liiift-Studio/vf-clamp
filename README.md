@@ -1,9 +1,11 @@
 # vf-clamp
 
+[![npm](https://img.shields.io/npm/v/%40liiift-studio%2Fvf-clamp.svg)](https://www.npmjs.com/package/@liiift-studio/vf-clamp) [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT) [![part of liiift type-tools](https://img.shields.io/badge/liiift-type--tools-blueviolet)](https://github.com/Liiift-Studio/type-tools)
+
 Restrict a variable font's axis ranges to a specific subfamily scope — like CSS `clamp()` for design space.
 
 ```
-npm install vf-clamp
+npm install @liiift-studio/vf-clamp
 ```
 
 **[Interactive demo at vfclamp.com →](https://vfclamp.com)**
@@ -12,7 +14,7 @@ npm install vf-clamp
 
 ## What it does
 
-Takes a variable font (TTF) and produces one restricted variant per configured subfamily. Each variant is a valid variable font with unused axis ranges trimmed, gvar deltas pruned, and STAT records updated. No Python required — powered by [fonttools](https://github.com/fonttools/fonttools) compiled to WASM via [Pyodide](https://pyodide.org).
+Takes a variable font (TTF, OTF, WOFF, or WOFF2) and produces one restricted variant per configured output. Each variant is a valid variable font with unused axis ranges trimmed, gvar deltas pruned, and the name table updated to reflect the restricted instance range. No Python required — powered by [fonttools](https://github.com/fonttools/fonttools) compiled to WASM via [Pyodide](https://pyodide.org).
 
 ---
 
@@ -21,7 +23,7 @@ Takes a variable font (TTF) and produces one restricted variant per configured s
 ### Inspect a font first
 
 ```ts
-import { getInstances } from 'vf-clamp'
+import { getInstances } from '@liiift-studio/vf-clamp'
 import { readFile } from 'fs/promises'
 
 const font = await readFile('MyFont-VF.ttf')
@@ -31,26 +33,28 @@ const { axes, instances } = await getInstances(font)
 // instances:[{ name: 'Regular', coordinates: { wght: 400 } }, ...]
 ```
 
-Use the named instances to figure out what to clamp — adjacent instances naturally define the bounds for each subfamily.
+Use the named instances to figure out what to clamp — adjacent instances naturally define the bounds for each output.
 
-### Clamp to axis ranges
+### Clamp from named instances
 
 ```ts
-import { clampFont } from 'vf-clamp'
+import { clampFont } from '@liiift-studio/vf-clamp'
 import { readFile, writeFile } from 'fs/promises'
 
 const source = await readFile('Omnes-VF.ttf')
 
 const results = await clampFont(source, {
-  subfamilies: [
-    // Pin wdth to 75 — axis is removed from the output font
-    { name: 'Condensed', axes: { wdth: 75 } },
-
-    // Restrict wdth to a range — axis stays variable within [87.5, 100]
-    { name: 'SemiCondensed', axes: { wdth: { min: 87.5, max: 100 } } },
-
-    // Mixed: pin width, keep full weight range
-    { name: 'Narrow', axes: { wdth: 62.5 } },
+  outputs: [
+    // one VF spanning the full weight range for Condensed
+    {
+      name: 'Condensed',
+      instances: ['Condensed Thin', 'Condensed Black'],
+    },
+    // one VF for a narrower weight slice of SemiCondensed
+    {
+      name: 'SemiCondensed Text',
+      instances: ['SemiCondensed Light', 'SemiCondensed Bold'],
+    },
   ],
 })
 
@@ -59,18 +63,37 @@ for (const result of results) {
 }
 ```
 
-### Output as WOFF2
+### Clamp with explicit axis constraints
+
+```ts
+const results = await clampFont(source, {
+  outputs: [
+    // Pin wdth to 75 — axis is removed from the output font
+    { name: 'Condensed', axes: { wdth: 75 } },
+
+    // Restrict wdth to a range — axis stays variable within [87.5, 100]
+    { name: 'SemiCondensed', axes: { wdth: { min: 87.5, max: 100 } } },
+  ],
+})
+```
+
+### Mix instances and explicit axes
 
 ```ts
 const results = await clampFont(source, {
   format: 'woff2',
-  subfamilies: [
-    { name: 'Text', axes: { wght: { min: 400, max: 700 } } },
+  outputs: [
+    {
+      name: 'Condensed Text',
+      instances: ['Condensed Light', 'Condensed Bold'],
+      // Clamp opsz independently of the named instance range
+      axes: { opsz: { min: 8, max: 24 } },
+    },
   ],
 })
 
 // result.buffer is a valid WOFF2 file — Brotli-compressed
-await writeFile('Omnes-Text-VF.woff2', results[0].buffer)
+await writeFile('Omnes-Condensed-Text-VF.woff2', results[0].buffer)
 ```
 
 ---
@@ -79,9 +102,9 @@ await writeFile('Omnes-Text-VF.woff2', results[0].buffer)
 
 | Value | Effect |
 |---|---|
-| `number` | Pin the axis to that value — axis is removed from the output |
+| `number` | Pin the axis to that value — axis is locked and removed from the output |
 | `{ min, max }` | Restrict to a range — axis stays variable within those bounds |
-| `null` | Drop the axis at its current default — same as pinning at default |
+| `null` | Keep the full original range — same as omitting the axis entirely |
 | *(omitted)* | Keep the full original range — axis is unchanged |
 
 ---
@@ -93,10 +116,15 @@ await writeFile('Omnes-Text-VF.woff2', results[0].buffer)
 ```ts
 async function getInstances(
   input: ArrayBuffer | Uint8Array | Buffer
-): Promise<{ axes: AxisDefinition[]; instances: FontInstance[] }>
+): Promise<FontInstancesResult>
+
+interface FontInstancesResult {
+  axes: AxisDefinition[]
+  instances: FontInstance[]
+}
 ```
 
-Reads the fvar table and returns every axis and named instance defined in the font. Use this to discover what can be clamped before building a subfamily config.
+Reads the fvar table and returns every axis and named instance defined in the font. Use this to discover what can be clamped before building an output config.
 
 ### `clampFont(input, options)`
 
@@ -109,20 +137,39 @@ async function clampFont(
 
 **Parameters**
 
-- `input` — Source variable font binary. Use the original source TTF, not WOFF/WOFF2.
-- `options.subfamilies` — Array of `SubfamilyConfig` entries, one per output variant.
-- `options.format` — `'ttf'` (default) or `'woff2'`.
+- `input` — Source variable font binary (TTF, OTF, WOFF, or WOFF2).
+- `options.outputs` — Array of `OutputConfig` entries, one per output variant.
+- `options.format` — `'ttf'` (default), `'otf'`, `'woff'`, or `'woff2'`.
 
 **Returns**
 
-Array of `ClampResult` in the same order as `options.subfamilies`:
+Array of `ClampResult` in the same order as `options.outputs`:
 
 ```ts
 interface ClampResult {
-  name: string       // matches SubfamilyConfig.name
-  buffer: Uint8Array // restricted font binary (TTF or WOFF2)
+  name: string       // matches OutputConfig.name (or auto-derived instance range)
+  buffer: Uint8Array // restricted font binary
+  format: OutputFormat
 }
 ```
+
+### `convertToWoff2(input)`
+
+```ts
+async function convertToWoff2(
+  input: ArrayBuffer | Uint8Array | Buffer
+): Promise<Uint8Array>
+```
+
+Standalone WOFF2 encoder. Wraps the same Brotli-based pipeline used internally by `clampFont`. Useful for converting any TTF/OTF to WOFF2 without clamping.
+
+### `compactName(name)`
+
+```ts
+function compactName(name: string): string
+```
+
+Converts a family name to a valid PostScript name — removes non-ASCII characters, replaces spaces with hyphens, strips leading and trailing hyphens.
 
 ---
 
@@ -136,14 +183,21 @@ interface AxisRange {
   max: number
 }
 
-interface SubfamilyConfig {
-  name: string
-  axes: Record<string, AxisValue>
+interface OutputConfig {
+  name?: string           // label for this output — written into the name table
+  instances?: string[]    // named instances to hull; hull derived automatically
+  axes?: Record<string, AxisValue>  // explicit axis constraints; override hull per-tag
 }
 
 interface ClampOptions {
-  format?: 'ttf' | 'woff2'
-  subfamilies: SubfamilyConfig[]
+  outputs: OutputConfig[]
+  format?: 'ttf' | 'otf' | 'woff' | 'woff2'  // defaults to 'ttf'
+}
+
+interface ClampResult {
+  name: string
+  buffer: Uint8Array
+  format: OutputFormat
 }
 
 interface AxisDefinition {
@@ -158,16 +212,25 @@ interface FontInstance {
   name: string
   coordinates: Record<string, number>
 }
+
+interface FontInstancesResult {
+  axes: AxisDefinition[]
+  instances: FontInstance[]
+}
+
+// Deprecated alias — use OutputConfig
+type SubfamilyConfig = OutputConfig
 ```
 
 ---
 
 ## Notes
 
-- **Pyodide cold start**: first call initialises the Python WASM runtime (~2–4 s). Subsequent calls in the same process reuse it.
-- **Input format**: use the source TTF, not WOFF2. The instancer works on TTF/OTF.
-- **Subfamilies are processed sequentially** — Pyodide is single-threaded.
-- **Adjacent instances**: when building subfamilies from named instances, select a contiguous run along the primary axis. Non-adjacent instances produce separate output files.
+- **Pyodide cold start**: first call initialises the Python WASM runtime (~10–20 s on first use per process). Subsequent calls in the same process reuse the singleton — warm calls are fast (~1–2 s).
+- **Input format**: TTF, OTF, WOFF, and WOFF2 are all accepted as input.
+- **Outputs are processed sequentially** — Pyodide is single-threaded.
+- **Name table patching**: each output font's family name, full name, and PostScript name are updated to reflect the output's name.
+- **Next.js**: add `@liiift-studio/vf-clamp` to `serverExternalPackages` in `next.config.ts` to prevent webpack bundling the Pyodide runtime.
 
 ---
 
@@ -183,8 +246,9 @@ Content-Type: application/json
 {
   "fontUrl": "https://cdn.example.com/MyFont-VF.ttf",
   "format": "woff2",
-  "subfamilies": [
-    { "name": "Text", "axes": { "wght": { "min": 400, "max": 700 } } }
+  "outputs": [
+    { "name": "Text", "instances": ["Light", "Bold"] },
+    { "name": "Condensed", "axes": { "wdth": 75 } }
   ]
 }
 // → { results: [{ name, data, format, size }] }
@@ -195,6 +259,19 @@ X-API-Key: <your-key>
 { "fontUrl": "https://cdn.example.com/MyFont-VF.ttf" }
 // → { axes: [...], instances: [...] }
 ```
+
+---
+
+## Integrations
+
+vf-clamp is available as a CLI and as native plugins for Glyphs.app, RoboFont, and VS Code — all using the same axis-constraint model as the npm package.
+
+| Integration | Distribution |
+|---|---|
+| [vf-clamp-cli](https://github.com/Liiift-Studio/vf-clamp-cli) | `npm install -g @liiift-studio/vf-clamp-cli` |
+| [vf-clamp-glyphs](https://github.com/Liiift-Studio/vf-clamp-glyphs) | `.glyphsPlugin` download |
+| [vf-clamp-robofont](https://github.com/Liiift-Studio/vf-clamp-robofont) | `.roboFontExt` download |
+| [vf-clamp-vscode](https://github.com/Liiift-Studio/vf-clamp-vscode) | `.vsix` download / VS Code Marketplace |
 
 ---
 
