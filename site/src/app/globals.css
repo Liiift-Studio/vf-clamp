@@ -3,8 +3,8 @@
 @import "./base.css";
 
 :root {
-	--background: hsl(263, 55%, 9%);
-	--foreground: hsl(263, 15%, 92%);
+	--background: oklch(0.10 0.12 263);
+	--foreground: oklch(0.93 0.03 263);
 	--accent: rgba(80, 190, 200, 0.85);
 	--font-sans: var(--font-inter), sans-serif;
 }
