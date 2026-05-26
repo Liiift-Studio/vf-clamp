@@ -3,6 +3,7 @@ import CodeBlock from "../components/CodeBlock"
 import CopyInstall from "../components/CopyInstall"
 import SiteFooter from "../components/SiteFooter"
 import Demo from "../components/Demo"
+import ToolDirectory from "../components/ToolDirectory"
 import { MagnetChar } from "@liiift-studio/magnettype"
 import SettleP from "../components/SettleP"
 import { version } from "../../../package.json"
@@ -47,17 +48,17 @@ export default function Home() {
 			</section>
 
 			{/* Interactive demo */}
-		<section className="w-full max-w-2xl lg:max-w-5xl flex flex-col gap-4">
-			<p className="text-xs uppercase tracking-widest opacity-50">Interactive demo</p>
-			<SettleP className="text-sm opacity-50 leading-relaxed max-w-lg">
-				Load Encode Sans or drop any variable font. Select named instances — adjacent selections
-				merge into a single output file. Isolated selections generate their own file, flagged in yellow.
-				Preview the restricted design space live, then download the clamped TTFs.
-			</SettleP>
-			<div className="rounded-xl -mx-2 px-8 py-8" style={{ background: "rgba(0,0,0,0.2)" }}>
-				<Demo />
-			</div>
-		</section>
+			<section className="w-full max-w-2xl lg:max-w-5xl flex flex-col gap-4">
+				<p className="text-xs uppercase tracking-widest opacity-50">Interactive demo</p>
+				<SettleP className="text-sm opacity-50 leading-relaxed max-w-lg">
+					Load Encode Sans or drop any variable font. Select named instances — adjacent selections
+					merge into a single output file. Isolated selections generate their own file, flagged in yellow.
+					Preview the restricted design space live, then download the clamped TTFs.
+				</SettleP>
+				<div className="rounded-xl -mx-8 px-8 py-8" style={{ background: "rgba(0,0,0,0.2)" }}>
+					<Demo />
+				</div>
+			</section>
 
 			{/* Integrations */}
 			<section className="w-full max-w-2xl lg:max-w-5xl flex flex-col gap-6">
@@ -262,6 +263,18 @@ for (const result of results) {
 					</div>
 
 					<div className="flex flex-col gap-3">
+						<SettleP className="opacity-50">Inspect a font first</SettleP>
+						<CodeBlock code={`import { getInstances } from '@liiift-studio/vf-clamp'
+import { readFile } from 'fs/promises'
+
+const font = await readFile('MyFont-VF.ttf')
+const { axes, instances } = await getInstances(font)
+
+// axes: [{ tag: 'wght', minimum: 100, default: 400, maximum: 900, name: 'Weight' }, ...]
+// instances: [{ name: 'Regular', coordinates: { wght: 400 } }, ...]`} />
+					</div>
+
+					<div className="flex flex-col gap-3">
 						<SettleP className="opacity-50">CLI — from the shell</SettleP>
 						<CodeBlock code={`# Pin wght, restrict wdth, keep all other axes
 npx @liiift-studio/vf-clamp-cli clamp font.ttf \\
@@ -294,24 +307,6 @@ npx @liiift-studio/vf-clamp-cli clamp font.ttf \\
 					</div>
 
 				</div>
-			</section>
-
-			{/* Inspect a font */}
-			<section className="w-full max-w-2xl lg:max-w-5xl flex flex-col gap-6">
-				<p className="text-xs uppercase tracking-widest opacity-50">Inspect a font</p>
-				<SettleP className="text-sm opacity-60 leading-relaxed max-w-lg">
-					<code className="text-xs font-mono">getInstances()</code> reads the fvar table and returns every axis
-					and named instance defined in the font — useful for discovering what can be clamped
-					before building a subfamily config.
-				</SettleP>
-				<CodeBlock code={`import { getInstances } from '@liiift-studio/vf-clamp'
-import { readFile } from 'fs/promises'
-
-const font = await readFile('MyFont-VF.ttf')
-const { axes, instances } = await getInstances(font)
-
-// axes: [{ tag: 'wght', minimum: 100, default: 400, maximum: 900, name: 'Weight' }, ...]
-// instances: [{ name: 'Regular', coordinates: { wght: 400 } }, ...]`} />
 			</section>
 
 			{/* REST API */}
@@ -408,6 +403,8 @@ X-API-Key: <your-key>
 					</div>
 				</div>
 			</section>
+
+			<ToolDirectory current="vfClamp" />
 
 			<SiteFooter current="vfClamp" npmVersion={version} siteVersion={siteVersion} />
 
