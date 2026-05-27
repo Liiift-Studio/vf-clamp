@@ -210,15 +210,29 @@ function groupBySubfamily(
 		.filter(({ vals }) => vals.length > 1)
 		.sort((a, b) => a.vals.length - b.vals.length)
 
+	// Sort instances low-to-high by all axes (excluding the group axis) in fvar order
+	function sortMembers(members: FontInstance[], skipTag: string | null): FontInstance[] {
+		return [...members].sort((a, b) => {
+			for (const ax of axes) {
+				if (ax.tag === skipTag) continue
+				const av = a.coordinates[ax.tag] ?? ax.default
+				const bv = b.coordinates[ax.tag] ?? ax.default
+				if (av !== bv) return av - bv
+			}
+			return 0
+		})
+	}
+
 	if (!candidates.length) {
-		return [{ label: '', axisValue: 0, hasNamePrefix: false, key: 'all', axisTag: null, instances }]
+		return [{ label: '', axisValue: 0, hasNamePrefix: false, key: 'all', axisTag: null, instances: sortMembers(instances, null) }]
 	}
 
 	const { ax: groupAxis, vals } = candidates[0]
 
 	return vals.map((val) => {
-		const members = instances.filter(
-			(i) => (i.coordinates[groupAxis.tag] ?? groupAxis.default) === val,
+		const members = sortMembers(
+			instances.filter((i) => (i.coordinates[groupAxis.tag] ?? groupAxis.default) === val),
+			groupAxis.tag,
 		)
 		const prefix = longestCommonPrefix(members.map((i) => i.name)).trim()
 		return {
