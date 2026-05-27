@@ -53,6 +53,16 @@ export interface ClampOptions {
 	 * 'otf' is a passthrough — the instancer preserves the input outline format.
 	 */
 	format?: OutputFormat
+	/**
+	 * Remap the wght axis so its minimum becomes 100, making CSS font-weight values
+	 * (100–900) work as expected. Instance and STAT axis value coordinates are
+	 * remapped proportionally; the avar is unchanged because the remapping preserves
+	 * normalised values. Defaults to false — the axis keeps its original fvar range.
+	 *
+	 * Use this when the source font's design space starts above wght 100 (e.g. 250)
+	 * and you need font-weight: 100 to reach the lightest weight.
+	 */
+	normalizeWeightAxis?: boolean
 }
 
 /**
