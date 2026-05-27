@@ -26,6 +26,7 @@ export const metadata: Metadata = {
 		description: "Restrict a variable font's design space to a named-instance range. Pin axes, clamp to sub-ranges, download scoped VFs — no Python required.",
 	},
 	metadataBase: new URL("https://vfclamp.com"),
+	alternates: { canonical: "https://vfclamp.com" },
 }
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
