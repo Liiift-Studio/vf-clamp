@@ -1,12 +1,8 @@
 // src/core/clamp.ts — clampFont() implementation wrapping @web-alchemy/fonttools
-import { createRequire } from 'node:module'
 import type { AxisValue, AxisDefinition, ClampOptions, ClampResult, FontInstance, OutputFormat } from './types.js'
 import { convertToWoff, convertToWoff2 } from './convert.js'
 import { getInstances } from './instances.js'
-
-// Access preparePyodide and PyodideFile from the shared @web-alchemy/fonttools singleton
-const _require = createRequire(import.meta.url)
-const { preparePyodide, PyodideFile } = _require('@web-alchemy/fonttools/src/pyodide.js')
+import { preparePyodide, PyodideFile } from './pyodide.js'
 
 /** Cached Python name-patcher function — initialised once, reused across calls */
 let _namePatcherFn: ((fileOptions: Map<string, string>) => void) | null = null

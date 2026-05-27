@@ -24,9 +24,10 @@ export async function POST(req: NextRequest) {
 		return NextResponse.json({ error: 'Request must be multipart/form-data' }, { status: 400 })
 	}
 
-	const fontEntry  = form.get('font')
-	const outputsRaw = form.get('outputs')
-	const formatRaw  = form.get('format') ?? 'ttf'
+	const fontEntry          = form.get('font')
+	const outputsRaw         = form.get('outputs')
+	const formatRaw          = form.get('format') ?? 'ttf'
+	const normalizeWeightAxis = form.get('normalizeWeightAxis') === '1'
 
 	if (!fontEntry || !(fontEntry instanceof Blob)) {
 		return NextResponse.json({ error: 'font field is required (binary)' }, { status: 400 })
@@ -59,7 +60,7 @@ export async function POST(req: NextRequest) {
 			setTimeout(() => reject(new Error('Processing timed out after 60 s')), TIMEOUT_MS)
 		)
 		const results = await Promise.race([
-			clampFont(fontBuffer, { outputs, format }),
+			clampFont(fontBuffer, { outputs, format, normalizeWeightAxis }),
 			timeout,
 		])
 		return NextResponse.json({

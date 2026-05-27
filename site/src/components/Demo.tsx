@@ -101,7 +101,7 @@ function parseNameTable(buffer: ArrayBuffer): Array<{ nameId: number; label: str
 }
 
 /** Generate a vf-clamp npm code snippet from the current groups. */
-function generateCode(groups: InstanceGroup[], fontName: string, format: OutputFormat): string {
+function generateCode(groups: InstanceGroup[], fontName: string, format: OutputFormat, normalizeWeightAxis: boolean): string {
 	if (!groups.length) return ''
 
 	const safe = fontName.replace(/\s+/g, '-') || 'MyFont-VF'
@@ -122,7 +122,10 @@ function generateCode(groups: InstanceGroup[], fontName: string, format: OutputF
 		]
 	})
 
-	const formatLine = format !== 'ttf' ? [`  format: '${format}',`] : []
+	const optionLines = [
+		...(format !== 'ttf' ? [`  format: '${format}',`] : []),
+		...(normalizeWeightAxis ? [`  normalizeWeightAxis: true,`] : []),
+	]
 
 	return [
 		`import { clampFont } from '@liiift-studio/vf-clamp'`,
@@ -131,7 +134,7 @@ function generateCode(groups: InstanceGroup[], fontName: string, format: OutputF
 		`const source = await readFile('${safe}.ttf')`,
 		``,
 		`const results = await clampFont(source, {`,
-		...formatLine,
+		...optionLines,
 		`  outputs: [`,
 		...outputLines,
 		`  ],`,
@@ -541,7 +544,8 @@ export default function Demo() {
 	const [showCode, setShowCode]               = useState(false)
 	const [showAdvanced, setShowAdvanced]       = useState(false)
 	const [axisOverrides, setAxisOverrides]     = useState<Record<string, { min: number; max: number }>>({})
-	const [outputFormat, setOutputFormat]       = useState<OutputFormat>('ttf')
+	const [outputFormat, setOutputFormat]             = useState<OutputFormat>('ttf')
+	const [normalizeWeightAxis, setNormalizeWeightAxis] = useState(false)
 	const [nameTables, setNameTables]           = useState<Record<number, Array<{ nameId: number; label: string; value: string }>>>({})
 	const [expandedNameTable, setExpandedNameTable] = useState<number | null>(null)
 	const [outputSizes, setOutputSizes]         = useState<Record<number, number>>({})
@@ -770,6 +774,7 @@ export default function Demo() {
 			fd.append('font', new Blob([fontBuffer], { type: 'font/ttf' }), 'font')
 			fd.append('outputs', JSON.stringify(outputs))
 			if (outputFormat !== 'ttf') fd.append('format', outputFormat)
+			if (normalizeWeightAxis) fd.append('normalizeWeightAxis', '1')
 
 			const res = await fetch('/api/demo/clamp', { method: 'POST', body: fd })
 			const json = await res.json()
@@ -1188,6 +1193,24 @@ export default function Demo() {
 									))}
 								</div>
 							)}
+							{/* Normalize weight axis toggle */}
+							{!processing && (
+								<label
+									title="Remap the wght axis so font-weight 100 reaches the lightest weight. Use when the font's design space starts above wght 100 (e.g. 250)."
+									className="flex items-center gap-2 text-xs cursor-pointer select-none"
+								>
+									<input
+										type="checkbox"
+										checked={normalizeWeightAxis}
+										onChange={(e) => setNormalizeWeightAxis(e.target.checked)}
+										aria-label="Remap wght axis to CSS 100–900"
+										className="w-3.5 h-3.5 rounded accent-white/60"
+									/>
+									<span className={normalizeWeightAxis ? 'opacity-70' : 'opacity-30 hover:opacity-50 transition-opacity'}>
+										Normalise wght to 100–900
+									</span>
+								</label>
+							)}
 						</div>
 						{!processing && (
 							<div className="flex flex-col gap-0.5">
@@ -1224,7 +1247,7 @@ export default function Demo() {
 						</button>
 						{showCode && (
 							<pre className="bg-white/5 rounded-xl p-4 overflow-x-auto text-xs leading-relaxed font-mono opacity-75 whitespace-pre">
-								<code>{generateCode(groups, fontName, outputFormat)}</code>
+								<code>{generateCode(groups, fontName, outputFormat, normalizeWeightAxis)}</code>
 							</pre>
 						)}
 					</div>
