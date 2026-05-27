@@ -373,11 +373,31 @@ function groupIsVariable(group: InstanceGroup, axes: AxisDefinition[]): boolean 
 }
 
 /** Filename stem + extension for a group, omitting "VF" for pinned (non-variable) outputs. */
-function groupFilename(group: InstanceGroup, axes: AxisDefinition[], ext: string): string {
-	const first = group.instances[0]
-	const last  = group.instances[group.instances.length - 1]
-	const name  = group.instances.length === 1 ? first.name : compactName(first.name, last.name)
-	return groupIsVariable(group, axes) ? `${name} VF.${ext}` : `${name}.${ext}`
+function groupFilename(
+	group: InstanceGroup,
+	axes: AxisDefinition[],
+	ext: string,
+	fontName: string,
+	axisOverrides: Record<string, { min: number; max: number }>,
+): string {
+	const first    = group.instances[0]
+	const last     = group.instances[group.instances.length - 1]
+	const instPart = group.instances.length === 1 ? first.name : compactName(first.name, last.name)
+
+	// Free-axis segments from the Advanced panel — not present in any instance name
+	const overrideParts = Object.entries(axisOverrides).map(([tag, { min, max }]) =>
+		min === max ? `${tag}${min}` : `${tag}${min}-${max}`
+	)
+
+	// Prepend font family name unless the instance-derived part already starts with it
+	const parts: string[] = []
+	if (fontName && !instPart.toLowerCase().startsWith(fontName.toLowerCase())) {
+		parts.push(fontName)
+	}
+	parts.push(...overrideParts, instPart)
+
+	const stem = parts.join(' ')
+	return groupIsVariable(group, axes) ? `${stem} VF.${ext}` : `${stem}.${ext}`
 }
 
 // ── Sub-components ────────────────────────────────────────────────────────────
@@ -766,7 +786,7 @@ export default function Demo() {
 
 				const fmt   = (result.format ?? outputFormat) as OutputFormat
 				const bytes = Uint8Array.from(atob(result.data), (c) => c.charCodeAt(0))
-				const filename = groupFilename(group, axes, FORMAT_EXT[fmt])
+				const filename = groupFilename(group, axes, FORMAT_EXT[fmt], fontName, axisOverrides)
 
 				newOutputSizes[idx] = bytes.byteLength
 
@@ -1031,7 +1051,7 @@ export default function Demo() {
 						const label      = group.instances.length === 1
 							? first.name
 							: `${first.name} → ${last.name}`
-						const filename   = groupFilename(group, axes, FORMAT_EXT[outputFormat])
+						const filename   = groupFilename(group, axes, FORMAT_EXT[outputFormat], fontName, axisOverrides)
 						const isIsolated = group.instances.length === 1
 						const nameTable  = nameTables[i]
 
@@ -1173,7 +1193,7 @@ export default function Demo() {
 							<div className="flex flex-col gap-0.5">
 								{groups.map((group, i) => (
 								<p key={i} className="text-[10px] font-mono opacity-20">
-									{groupFilename(group, axes, FORMAT_EXT[outputFormat])}
+									{groupFilename(group, axes, FORMAT_EXT[outputFormat], fontName, axisOverrides)}
 								</p>
 							))}
 							</div>
