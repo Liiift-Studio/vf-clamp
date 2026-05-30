@@ -2,7 +2,7 @@
 
 [![npm](https://img.shields.io/npm/v/%40liiift-studio%2Fvf-clamp.svg)](https://www.npmjs.com/package/@liiift-studio/vf-clamp) [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT) [![part of liiift type-tools](https://img.shields.io/badge/liiift-type--tools-blueviolet)](https://github.com/Liiift-Studio/type-tools)
 
-Restrict a variable font's axis ranges to a specific subfamily scope — like CSS `clamp()` for design space.
+The delivery layer for per-purchase micro-VFs. Restrict a variable font's axis ranges to exactly the named instances a customer bought — like CSS `clamp()` for design space.
 
 ```
 npm install @liiift-studio/vf-clamp
@@ -15,6 +15,25 @@ npm install @liiift-studio/vf-clamp
 ## What it does
 
 Takes a variable font (TTF, OTF, WOFF, or WOFF2) and produces one restricted variant per configured output. Each variant is a valid variable font with unused axis ranges trimmed, gvar deltas pruned, and the name table updated to reflect the restricted instance range. No Python required — powered by [fonttools](https://github.com/fonttools/fonttools) compiled to WASM via [Pyodide](https://pyodide.org).
+
+---
+
+## For foundries
+
+A variable font is usually all-or-nothing: customers buy the whole family to get one, or they buy statics and lose interpolation. vf-clamp adds the tier in between — a variable font scoped to exactly the named instances a customer purchased, generated and delivered at checkout.
+
+**Purchase → Clamp → Deliver.** A customer buys two or more adjacent styles; your store POSTs the order to the [REST API](#rest-api); a scoped VF comes back in seconds with its name table rewritten to the purchased range, in the format the licence calls for.
+
+Why it matters:
+
+- **A new revenue tier** — two adjacent styles become a variable purchase, not just two statics. Price a ladder: two-style VF → subfamily → full family.
+- **Licence containment** — a full VF ships every master, so customers can reach weights they never paid for. A clamped VF physically contains only the purchased range — nothing outside the licence is left in the file to leak.
+- **Branded, traceable files** — the name table (family, full name, PostScript name) is rewritten to the purchased range, so every delivered file is identifiable as that specific order.
+- **Lighter files for the web** — a site that uses only Medium–Black shouldn't ship Thin–Light deadweight. Clamping prunes masters outside the licensed range: variation across what they bought, at a smaller download.
+- **Sell bespoke cuts** — pin an axis to a coordinate that was never a named instance (a custom optical size or width) and sell that exact cut, without shipping it in the retail family.
+- **Ready for `opsz` demand** — browsers drive the optical-size axis automatically via `font-optical-sizing: auto`, keyed off the rendered point size. Delivering `opsz` clamped to a usable range keeps files small as that axis matters more.
+
+The npm package, CLI, and editor plugins all share the same axis-constraint model, so the same delivery logic runs in your build pipeline, your storefront, or a designer's font editor.
 
 ---
 
@@ -236,7 +255,7 @@ type SubfamilyConfig = OutputConfig
 
 ## REST API
 
-vfclamp.com also exposes hosted endpoints. Useful for server-side workflows where the font is fetched by URL. Contact [hello@liiift.studio](mailto:hello@liiift.studio) to request an API key.
+The delivery layer: wire vf-clamp into a storefront so a purchase event becomes a delivered file. vfclamp.com exposes hosted endpoints — one to read a font's instances, one to clamp and return scoped fonts by URL. Useful for server-side workflows where the font is fetched by URL. Contact [hello@liiift.studio](mailto:hello@liiift.studio) to request an API key.
 
 ```
 POST https://vfclamp.com/api/clamp

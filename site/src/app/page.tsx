@@ -37,21 +37,114 @@ export default function Home() {
 					<span>Pyodide WASM</span><span>·</span>
 					<span>TTF · OTF · WOFF · WOFF2</span>
 				</div>
+				<p className="text-base opacity-80 leading-relaxed max-w-lg">
+					Deliver a variable font scoped to exactly the instances a customer bought — not
+					the whole family. vf-clamp is the delivery layer for per-purchase micro-VFs: a new
+					licensing tier between static styles and the full family.
+				</p>
 				<p className="text-base opacity-60 leading-relaxed max-w-lg">
-					vf-clamp wraps fonttools&rsquo; varLib.instancer in a zero-install WASM runtime.
+					Under the hood it wraps fonttools&rsquo; varLib.instancer in a zero-install WASM runtime.
 					Pass in a variable font and a map of axis constraints — pin an axis to remove it,
 					restrict it to a sub-range, or leave it untouched. The output is a smaller,
 					self-contained font trimmed to exactly the design space you declared.
 				</p>
 			</section>
 
+			{/* For foundries */}
+			<section className="w-full max-w-2xl lg:max-w-5xl flex flex-col gap-6">
+				<p className="text-xs uppercase tracking-widest opacity-50">For foundries</p>
+				<p className="text-base opacity-70 leading-relaxed max-w-xl">
+					Today a variable font is all-or-nothing: customers buy the whole family to get one,
+					or they buy statics and lose interpolation entirely. vf-clamp adds the tier in
+					between — a variable font scoped to exactly the named instances a customer purchased,
+					generated and delivered at checkout.
+				</p>
+
+				{/* Purchase → Clamp → Deliver */}
+				<div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+					{[
+						{ n: "01", t: "Purchase", d: "A customer buys two or more adjacent styles — Light through Bold, or a single width across its weights." },
+						{ n: "02", t: "Clamp", d: "Your store POSTs the order to the vf-clamp API. The design space is hulled to those instances; everything outside is pruned." },
+						{ n: "03", t: "Deliver", d: "A scoped VF comes back in seconds, name table rewritten to the purchased range, in the format the licence calls for." },
+					].map((step) => (
+						<div key={step.n} className="flex flex-col gap-2 rounded-xl p-5" style={{ background: "rgba(0,0,0,0.2)" }}>
+							<span className="text-xs font-mono opacity-30">{step.n}</span>
+							<span className="text-sm font-medium">{step.t}</span>
+							<span className="text-xs opacity-50 leading-relaxed">{step.d}</span>
+						</div>
+					))}
+				</div>
+
+				{/* Value props */}
+				<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+
+					<div className="flex flex-col gap-2 rounded-xl p-6" style={{ background: "rgba(0,0,0,0.2)" }}>
+						<span className="text-sm font-medium">A new revenue tier</span>
+						<p className="text-xs opacity-50 leading-relaxed">
+							Two adjacent styles become a variable purchase, not just two statics. Price a
+							ladder — two-style VF, subfamily, full family — and capture customers who want
+							interpolation but don&rsquo;t need every weight.
+						</p>
+					</div>
+
+					<div className="flex flex-col gap-2 rounded-xl p-6" style={{ background: "rgba(0,0,0,0.2)" }}>
+						<span className="text-sm font-medium">Licence containment</span>
+						<p className="text-xs opacity-50 leading-relaxed">
+							A full VF ships every master — customers can reach weights they never paid for.
+							A clamped VF physically contains only the purchased range. There&rsquo;s nothing
+							outside the licence left in the file to leak.
+						</p>
+					</div>
+
+					<div className="flex flex-col gap-2 rounded-xl p-6" style={{ background: "rgba(0,0,0,0.2)" }}>
+						<span className="text-sm font-medium">Branded, traceable files</span>
+						<p className="text-xs opacity-50 leading-relaxed">
+							The name table — family, full name, PostScript name — is rewritten to the
+							purchased range. Every delivered file is identifiable as that specific order,
+							which helps with support and tracing leaks.
+						</p>
+					</div>
+
+					<div className="flex flex-col gap-2 rounded-xl p-6" style={{ background: "rgba(0,0,0,0.2)" }}>
+						<span className="text-sm font-medium">Lighter files for the web</span>
+						<p className="text-xs opacity-50 leading-relaxed">
+							A site that uses only Medium&ndash;Black shouldn&rsquo;t ship Thin&ndash;Light
+							deadweight. Clamping prunes the masters outside the licensed range, so the
+							customer gets variation across what they bought — and a smaller download.
+						</p>
+					</div>
+
+					<div className="flex flex-col gap-2 rounded-xl p-6" style={{ background: "rgba(0,0,0,0.2)" }}>
+						<span className="text-sm font-medium">Sell bespoke cuts</span>
+						<p className="text-xs opacity-50 leading-relaxed">
+							Pin an axis to a coordinate that was never a named instance — a custom optical
+							size or width — and sell that exact cut. The retail family doesn&rsquo;t have to
+							ship it for a customer to buy it.
+						</p>
+					</div>
+
+					<div className="flex flex-col gap-2 rounded-xl p-6" style={{ background: "rgba(0,0,0,0.2)" }}>
+						<span className="text-sm font-medium">Ready for opsz demand</span>
+						<p className="text-xs opacity-50 leading-relaxed">
+							Browsers now drive the optical-size axis automatically with
+							<code className="font-mono opacity-70"> font-optical-sizing: auto</code>, keying
+							off the rendered point size. As <code className="font-mono opacity-70">opsz</code>
+							{" "}matters more, delivering it clamped to a usable range keeps files honest and small.
+						</p>
+					</div>
+
+				</div>
+			</section>
+
 			{/* Interactive demo */}
 			<section className="w-full max-w-2xl lg:max-w-5xl flex flex-col gap-4">
 				<p className="text-xs uppercase tracking-widest opacity-50">Interactive demo</p>
 				<p className="text-sm opacity-50 leading-relaxed max-w-lg">
-					Load Encode Sans or drop any variable font. Select named instances — adjacent selections
-					merge into a single output file. Isolated selections generate their own file, flagged in yellow.
-					Preview the restricted design space live, then download the clamped TTFs.
+					This is what a customer&rsquo;s purchase produces. Load Encode Sans or drop any variable
+					font, then select named instances — as if picking the styles in an order. Adjacent
+					selections merge into a single output file; isolated selections generate their own,
+					flagged in yellow. Preview the restricted design space live, watch the file size drop,
+					then download the clamped fonts.
 				</p>
 				<div className="rounded-xl -mx-8 px-8 py-8" style={{ background: "rgba(0,0,0,0.2)" }}>
 					<Demo />
@@ -309,10 +402,12 @@ npx @liiift-studio/vf-clamp-cli clamp font.ttf \\
 
 			{/* REST API */}
 			<section className="w-full max-w-2xl lg:max-w-5xl flex flex-col gap-6">
-				<p className="text-xs uppercase tracking-widest opacity-50">REST API</p>
+				<p className="text-xs uppercase tracking-widest opacity-50">REST API — the delivery layer</p>
 				<p className="text-sm opacity-60 leading-relaxed max-w-lg">
-					vfclamp.com exposes two endpoints for server-to-server use. Both require an API key.
-					Contact <a href="mailto:hello@liiift.studio" className="opacity-100 hover:underline underline-offset-2">hello@liiift.studio</a> to request access.
+					This is how a storefront wires vf-clamp into checkout: turn a purchase event into a
+					delivered file. vfclamp.com exposes two endpoints — one to read a font&rsquo;s instances,
+					one to clamp and return scoped fonts by URL. Both require an API key. Contact{" "}
+					<a href="mailto:hello@liiift.studio" className="opacity-100 hover:underline underline-offset-2">hello@liiift.studio</a> to request access.
 				</p>
 				<CodeBlock code={`POST https://vfclamp.com/api/clamp
 X-API-Key: <your-key>
