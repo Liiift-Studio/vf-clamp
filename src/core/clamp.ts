@@ -4,17 +4,20 @@ import { convertToWoff, convertToWoff2 } from './convert.js'
 import { getInstances } from './instances.js'
 import { preparePyodide, PyodideFile } from './pyodide.js'
 
-/** Cached Python name-patcher function — initialised once, reused across calls */
-let _namePatcherFn: ((fileOptions: Map<string, string>) => void) | null = null
-/** Cached Python instancer — passes axis specs as JSON to avoid Pyodide array-bridging issues */
-let _instancerFn: ((fileOptions: Map<string, string>, axesJson: string) => void) | null = null
-/** Cached Python wght normalizer — remaps the wght axis to CSS 100–900 range */
-let _normalizerFn: ((fileOptions: Map<string, string>, newMin: string) => void) | null = null
+/**
+ * Promise-singleton caches for Python functions — initialised once per process.
+ * Storing Promises (not resolved values) ensures concurrent callers await the same
+ * pending initialisation instead of racing to issue multiple runPythonAsync calls.
+ */
+let _namePatcherFnP: Promise<(fileOptions: Map<string, string>) => void> | null = null
+let _instancerFnP: Promise<(fileOptions: Map<string, string>, axesJson: string) => void> | null = null
+let _normalizerFnP: Promise<(fileOptions: Map<string, string>, newMin: string) => void> | null = null
 
 async function getNamePatcher() {
-	if (_namePatcherFn) return _namePatcherFn
-	const pyodide = await preparePyodide()
-	_namePatcherFn = await pyodide.runPythonAsync(`
+	if (!_namePatcherFnP) {
+		// eslint-disable-next-line @typescript-eslint/no-explicit-any
+		_namePatcherFnP = preparePyodide().then((pyodide: any) =>
+			pyodide.runPythonAsync(`
 from fontTools import ttLib
 
 def patch_font_names_fn(file_options):
@@ -50,7 +53,9 @@ def patch_font_names_fn(file_options):
 
 patch_font_names_fn
 `)
-	return _namePatcherFn!
+		)
+	}
+	return _namePatcherFnP!
 }
 
 /**
@@ -60,9 +65,10 @@ patch_font_names_fn
  * objects and produce wrong fvar axis coordinates.
  */
 async function getInstancer() {
-	if (_instancerFn) return _instancerFn
-	const pyodide = await preparePyodide()
-	_instancerFn = await pyodide.runPythonAsync(`
+	if (!_instancerFnP) {
+		// eslint-disable-next-line @typescript-eslint/no-explicit-any
+		_instancerFnP = preparePyodide().then((pyodide: any) =>
+			pyodide.runPythonAsync(`
 from fontTools.ttLib import TTFont
 from fontTools.varLib import instancer
 import json
@@ -92,7 +98,9 @@ def vf_clamp_instantiate(file_options, axes_json):
 
 vf_clamp_instantiate
 `)
-	return _instancerFn!
+		)
+	}
+	return _instancerFnP!
 }
 
 /**
@@ -104,9 +112,10 @@ vf_clamp_instantiate
  * are unchanged. Only fvar min, instance coordinates, and STAT axis values are updated.
  */
 async function getNormalizer() {
-	if (_normalizerFn) return _normalizerFn
-	const pyodide = await preparePyodide()
-	_normalizerFn = await pyodide.runPythonAsync(`
+	if (!_normalizerFnP) {
+		// eslint-disable-next-line @typescript-eslint/no-explicit-any
+		_normalizerFnP = preparePyodide().then((pyodide: any) =>
+			pyodide.runPythonAsync(`
 from fontTools.ttLib import TTFont
 
 def vf_clamp_normalize_wght(file_options, new_min_str):
@@ -164,10 +173,16 @@ def vf_clamp_normalize_wght(file_options, new_min_str):
 
 vf_clamp_normalize_wght
 `)
-	return _normalizerFn!
+		)
+	}
+	return _normalizerFnP!
 }
 
-/** Convert a human-readable family name to a valid PostScript name (no spaces, ASCII only) */
+/**
+ * Convert a human-readable family name to a valid PostScript name.
+ * Removes non-ASCII/non-alphanumeric characters, replaces spaces with hyphens,
+ * strips leading/trailing hyphens, and truncates to the 63-character OpenType limit.
+ */
 function toPostScriptName(familyName: string): string {
 	return familyName
 		.replace(/[^A-Za-z0-9 -]/g, '')
@@ -175,21 +190,21 @@ function toPostScriptName(familyName: string): string {
 		.split(/\s+/)
 		.join('-')
 		.replace(/^-+|-+$/g, '')
+		.slice(0, 63)
 }
 
 /**
  * Patch the name table of a font buffer to reflect the restricted instance range.
  * Updates nameIDs 1 (Family), 4 (Full name), 6 (PostScript), 16 and 25 if present.
- * Falls back to the original buffer if patching fails.
+ * Falls back to the original buffer if patching fails, and logs a warning.
  */
 async function patchFontNames(buffer: Uint8Array, familyName: string): Promise<Uint8Array> {
 	if (!familyName) return buffer
+	const pyodide = await preparePyodide()
+	const inputFile  = new PyodideFile({ pyodide })
+	const outputFile = new PyodideFile({ pyodide })
 	try {
 		const psName = toPostScriptName(familyName)
-		const pyodide = await preparePyodide()
-
-		const inputFile = new PyodideFile({ pyodide })
-		const outputFile = new PyodideFile({ pyodide })
 
 		await inputFile.upload(buffer)
 
@@ -204,12 +219,13 @@ async function patchFontNames(buffer: Uint8Array, familyName: string): Promise<U
 		patcher(fileOptions)
 
 		const result = outputFile.download()
-		inputFile.delete()
-		outputFile.delete()
-
 		return result as Uint8Array
-	} catch {
+	} catch (err) {
+		console.warn(`vf-clamp: name table patching failed for "${familyName}" — returning unpatched buffer`, err)
 		return buffer
+	} finally {
+		try { inputFile.delete() } catch { /* already cleaned */ }
+		try { outputFile.delete() } catch { /* already cleaned */ }
 	}
 }
 
@@ -226,29 +242,32 @@ async function runInstancer(bytes: Uint8Array | Buffer, instancerAxes: Record<st
 	const inputFile  = new PyodideFile({ pyodide })
 	const outputFile = new PyodideFile({ pyodide })
 
-	await inputFile.upload(bytes)
+	try {
+		await inputFile.upload(bytes)
 
-	const fileOptions = new Map([
-		['input-file',  inputFile.filename],
-		['output-file', outputFile.filename],
-	])
+		const fileOptions = new Map([
+			['input-file',  inputFile.filename],
+			['output-file', outputFile.filename],
+		])
 
-	const fn = await getInstancer()
-	fn(fileOptions, JSON.stringify(instancerAxes))
+		const fn = await getInstancer()
+		fn(fileOptions, JSON.stringify(instancerAxes))
 
-	const result = outputFile.download()
-	inputFile.delete()
-	outputFile.delete()
-	return result as Uint8Array
+		const result = outputFile.download()
+		return result as Uint8Array
+	} finally {
+		try { inputFile.delete() } catch { /* already cleaned */ }
+		try { outputFile.delete() } catch { /* already cleaned */ }
+	}
 }
 
 /** Remap the wght axis minimum to newMin, preserving normalised values throughout */
 async function runNormalizer(bytes: Uint8Array, newMin: number): Promise<Uint8Array> {
-	try {
-		const pyodide = await preparePyodide()
-		const inputFile  = new PyodideFile({ pyodide })
-		const outputFile = new PyodideFile({ pyodide })
+	const pyodide = await preparePyodide()
+	const inputFile  = new PyodideFile({ pyodide })
+	const outputFile = new PyodideFile({ pyodide })
 
+	try {
 		await inputFile.upload(bytes)
 
 		const fileOptions = new Map([
@@ -260,16 +279,19 @@ async function runNormalizer(bytes: Uint8Array, newMin: number): Promise<Uint8Ar
 		fn(fileOptions, String(newMin))
 
 		const result = outputFile.download()
-		inputFile.delete()
-		outputFile.delete()
 		return result as Uint8Array
-	} catch {
+	} catch (err) {
+		console.warn('vf-clamp: wght normalisation failed — returning unnormalised buffer', err)
 		return bytes
+	} finally {
+		try { inputFile.delete() } catch { /* already cleaned */ }
+		try { outputFile.delete() } catch { /* already cleaned */ }
 	}
 }
 
 /**
  * Compute the axis hull (min/max per axis) across a set of named instances.
+ * Uses a Map for O(1) instance lookup by name.
  * Axes where min === max are returned as a pinned number; varying axes as an AxisRange.
  * Throws if any instance name is not found in the font.
  */
@@ -277,10 +299,13 @@ function computeHull(
 	requestedNames: string[],
 	fontInstances: FontInstance[],
 ): Record<string, AxisValue> {
+	// Pre-index by name for O(1) lookup instead of O(n) Array.find per name
+	const byName = new Map(fontInstances.map((i) => [i.name, i]))
+
 	const hull: Record<string, { min: number; max: number }> = {}
 
 	for (const name of requestedNames) {
-		const inst = fontInstances.find((i) => i.name === name)
+		const inst = byName.get(name)
 		if (!inst) throw new Error(`Named instance "${name}" not found in font`)
 
 		for (const [tag, val] of Object.entries(inst.coordinates)) {
@@ -368,11 +393,12 @@ export async function clampFont(
 		}
 
 		// Derive name before patching so the name table reflects it
+		// Use ASCII hyphen (not en-dash) so toPostScriptName preserves the separator
 		const name = output.name ??
 			(output.instances?.length
 				? output.instances.length === 1
 					? output.instances[0]
-					: `${output.instances[0]}–${output.instances[output.instances.length - 1]}`
+					: `${output.instances[0]}-${output.instances[output.instances.length - 1]}`
 				: 'output')
 
 		let buffer = await runInstancer(bytes, instancerAxes)

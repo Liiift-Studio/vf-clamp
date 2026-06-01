@@ -159,6 +159,7 @@ async function clampFont(
 - `input` — Source variable font binary (TTF, OTF, WOFF, or WOFF2).
 - `options.outputs` — Array of `OutputConfig` entries, one per output variant.
 - `options.format` — `'ttf'` (default), `'otf'`, `'woff'`, or `'woff2'`.
+- `options.normalizeWeightAxis` — When `true`, remaps the wght axis minimum to 100 so that CSS `font-weight: 100` reaches the lightest weight. Useful for fonts whose design space starts above wght 100 (e.g. 250). Defaults to `false`.
 
 **Returns**
 
@@ -176,19 +177,35 @@ interface ClampResult {
 
 ```ts
 async function convertToWoff2(
-  input: ArrayBuffer | Uint8Array | Buffer
+  input: Uint8Array | Buffer
 ): Promise<Uint8Array>
 ```
 
 Standalone WOFF2 encoder. Wraps the same Brotli-based pipeline used internally by `clampFont`. Useful for converting any TTF/OTF to WOFF2 without clamping.
 
-### `compactName(name)`
+### `convertToWoff(input)`
 
 ```ts
-function compactName(name: string): string
+async function convertToWoff(
+  input: Uint8Array | Buffer
+): Promise<Uint8Array>
 ```
 
-Converts a family name to a valid PostScript name — removes non-ASCII characters, replaces spaces with hyphens, strips leading and trailing hyphens.
+Standalone WOFF encoder. Wraps the same zlib-based pipeline used internally by `clampFont`. Useful for converting any TTF/OTF to WOFF without clamping.
+
+### `compactName(first, last)`
+
+```ts
+function compactName(first: string, last: string): string
+```
+
+Produces a compact display name from the first and last selected instance names. Strips shared leading prefix and trailing suffix tokens, joins differing parts with a hyphen.
+
+```ts
+compactName('Inter Light', 'Inter Bold')         // → 'Inter Light-Bold'
+compactName('Condensed Thin', 'Condensed Black') // → 'Condensed Thin-Black'
+compactName('Regular', 'Regular')                // → 'Regular'
+```
 
 ---
 
@@ -211,6 +228,7 @@ interface OutputConfig {
 interface ClampOptions {
   outputs: OutputConfig[]
   format?: 'ttf' | 'otf' | 'woff' | 'woff2'  // defaults to 'ttf'
+  normalizeWeightAxis?: boolean                 // remap wght min to 100 for CSS compatibility
 }
 
 interface ClampResult {

@@ -1,14 +1,20 @@
 // src/core/instances.ts — extract named instances and axis definitions from a variable font
-import { createRequire } from 'node:module'
+import { preparePyodide, PyodideFile } from './pyodide.js'
 import type { FontInstancesResult } from './types.js'
 
-// Access preparePyodide and PyodideFile from the internal @web-alchemy/fonttools module
-// (same singleton Pyodide instance shared with clampFont)
-const _require = createRequire(import.meta.url)
-const { preparePyodide, PyodideFile } = _require('@web-alchemy/fonttools/src/pyodide.js')
+/**
+ * Promise-singleton cache for the Python instances function — compiled once per process.
+ * Concurrent callers await the same Promise instead of racing to issue multiple
+ * runPythonAsync calls against the Pyodide singleton.
+ */
+let _instancesFnP: Promise<(inputFile: string) => string> | null = null
 
-async function getPythonInstancesFunction(pyodide: any) {
-	return pyodide.runPythonAsync(`
+/** Return the cached Python instances function, compiling it on first call. */
+async function getInstancesFn() {
+	if (!_instancesFnP) {
+		// eslint-disable-next-line @typescript-eslint/no-explicit-any
+		_instancesFnP = preparePyodide().then((pyodide: any) =>
+			pyodide.runPythonAsync(`
 import json
 from fontTools.ttLib import TTFont
 
@@ -44,13 +50,17 @@ def get_instances_fn(input_file):
 
 get_instances_fn
 `)
+		)
+	}
+	return _instancesFnP!
 }
 
 /**
  * Extract axis definitions and named instances from a variable font's fvar table.
  * Returns the full design space: which axes exist and what named positions are defined.
+ * Accepts TTF, OTF, WOFF, or WOFF2 input — fonttools handles all four formats.
  *
- * @param input - Source variable font binary (TTF)
+ * @param input - Source variable font binary (TTF, OTF, WOFF, or WOFF2)
  * @returns Axis definitions and named instances, or empty arrays for a static font
  */
 export async function getInstances(
@@ -61,11 +71,12 @@ export async function getInstances(
 		input instanceof ArrayBuffer ? new Uint8Array(input) : input
 
 	const file = new PyodideFile({ pyodide })
-	await file.upload(bytes)
-
-	const fn = await getPythonInstancesFunction(pyodide)
-	const jsonStr: string = fn(file.filename)
-	file.delete()
-
-	return JSON.parse(jsonStr)
+	try {
+		await file.upload(bytes)
+		const fn = await getInstancesFn()
+		const jsonStr: string = fn(file.filename)
+		return JSON.parse(jsonStr)
+	} finally {
+		try { file.delete() } catch { /* already cleaned */ }
+	}
 }
