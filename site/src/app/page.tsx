@@ -52,7 +52,7 @@ export default function Home() {
 
 			{/* For foundries */}
 			<section className="w-full max-w-2xl lg:max-w-5xl flex flex-col gap-6">
-				<p className="text-xs uppercase tracking-widest opacity-50">For foundries</p>
+				<h2 className="text-xs uppercase tracking-widest opacity-50">For foundries</h2>
 				<p className="text-base opacity-70 leading-relaxed max-w-xl">
 					Today a variable font is all-or-nothing: customers buy the whole family to get one,
 					or they buy statics and lose interpolation entirely. vf-clamp adds the tier in
@@ -138,7 +138,7 @@ export default function Home() {
 
 			{/* Interactive demo */}
 			<section className="w-full max-w-2xl lg:max-w-5xl flex flex-col gap-4">
-				<p className="text-xs uppercase tracking-widest opacity-50">Interactive demo</p>
+				<h2 className="text-xs uppercase tracking-widest opacity-50">Interactive demo</h2>
 				<p className="text-sm opacity-50 leading-relaxed max-w-lg">
 					This is what a customer&rsquo;s purchase produces. Load Encode Sans or drop any variable
 					font, then select named instances — as if picking the styles in an order. Adjacent
@@ -153,7 +153,7 @@ export default function Home() {
 
 			{/* Integrations */}
 			<section className="w-full max-w-2xl lg:max-w-5xl flex flex-col gap-6">
-				<p className="text-xs uppercase tracking-widest opacity-50">Integrations</p>
+				<h2 className="text-xs uppercase tracking-widest opacity-50">Integrations</h2>
 				<p className="text-sm opacity-60 leading-relaxed max-w-lg">
 					vf-clamp is available as a CLI, and as native plugins for Glyphs.app, RoboFont, and VS Code —
 					all using the same axis-constraint model as the npm package.
@@ -253,7 +253,7 @@ export default function Home() {
 
 		{/* How it works */}
 			<section className="w-full max-w-2xl lg:max-w-5xl flex flex-col gap-6">
-				<p className="text-xs uppercase tracking-widest opacity-50">How it works</p>
+				<h2 className="text-xs uppercase tracking-widest opacity-50">How it works</h2>
 				<div className="grid grid-cols-1 sm:grid-cols-2 gap-12 text-sm leading-relaxed opacity-70 prose-grid">
 					<div className="flex flex-col gap-3">
 						<p className="font-semibold opacity-100 text-base">Start from named instances</p>
@@ -295,7 +295,7 @@ export default function Home() {
 
 			{/* Usage */}
 			<section className="w-full max-w-2xl lg:max-w-5xl flex flex-col gap-6">
-				<p className="text-xs uppercase tracking-widest opacity-50">Usage</p>
+				<h2 className="text-xs uppercase tracking-widest opacity-50">Usage</h2>
 				<div className="flex flex-col gap-8 text-sm">
 
 					<div className="flex flex-col gap-3">
@@ -361,7 +361,7 @@ import { readFile } from 'fs/promises'
 const font = await readFile('MyFont-VF.ttf')
 const { axes, instances } = await getInstances(font)
 
-// axes: [{ tag: 'wght', minimum: 100, default: 400, maximum: 900, name: 'Weight' }, ...]
+// axes: [{ tag: 'wght', name: 'Weight', minimum: 100, default: 400, maximum: 900 }, ...]
 // instances: [{ name: 'Regular', coordinates: { wght: 400 } }, ...]`} />
 					</div>
 
@@ -380,8 +380,9 @@ npx @liiift-studio/vf-clamp-cli clamp font.ttf \\
 					</div>
 
 					<div className="flex flex-col gap-3">
-						<p className="opacity-50">Axis value reference</p>
-						<table className="w-full text-xs">
+						<p className="opacity-50" id="axis-value-table-label">Axis value reference</p>
+						<table className="w-full text-xs" aria-labelledby="axis-value-table-label">
+							<caption className="sr-only">Axis value reference — how different value types constrain an axis</caption>
 							<thead>
 								<tr className="opacity-50 text-left">
 									<th className="pb-2 pr-6 font-normal">Value</th>
@@ -402,7 +403,7 @@ npx @liiift-studio/vf-clamp-cli clamp font.ttf \\
 
 			{/* REST API */}
 			<section className="w-full max-w-2xl lg:max-w-5xl flex flex-col gap-6">
-				<p className="text-xs uppercase tracking-widest opacity-50">REST API — the delivery layer</p>
+				<h2 className="text-xs uppercase tracking-widest opacity-50">REST API — the delivery layer</h2>
 				<p className="text-sm opacity-60 leading-relaxed max-w-lg">
 					This is how a storefront wires vf-clamp into checkout: turn a purchase event into a
 					delivered file. vfclamp.com exposes two endpoints — one to read a font&rsquo;s instances,
@@ -431,7 +432,7 @@ X-API-Key: <your-key>
 
 			{/* Limitations */}
 			<section className="w-full max-w-2xl lg:max-w-5xl flex flex-col gap-6">
-				<p className="text-xs uppercase tracking-widest opacity-50">Limitations</p>
+				<h2 className="text-xs uppercase tracking-widest opacity-50">Limitations</h2>
 				<div className="grid grid-cols-1 sm:grid-cols-2 gap-8 text-sm leading-relaxed opacity-70">
 					<div className="flex flex-col gap-2">
 						<p className="font-semibold opacity-100">Isolated selections produce static-like output</p>

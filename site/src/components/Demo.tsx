@@ -45,7 +45,7 @@ function formatBytes(n: number): string {
 	return `${n} B`
 }
 
-const NAME_ID_LABELS: Record<number, string> = {
+const NAME_ID_LABELS: Partial<Record<number, string>> = {
 	1:  'Family',
 	2:  'Subfamily',
 	4:  'Full name',
@@ -55,6 +55,7 @@ const NAME_ID_LABELS: Record<number, string> = {
 }
 
 /** Parse OpenType name table from a TTF/OTF buffer, returning interesting nameIDs. (#10) */
+// NAME_ID_LABELS uses Partial so the nullish-coalescing fallback `?? \`ID ${nameId}\`` is reachable at runtime.
 function parseNameTable(buffer: ArrayBuffer): Array<{ nameId: number; label: string; value: string }> {
 	try {
 		const view      = new DataView(buffer)
@@ -420,7 +421,8 @@ function AxisRangeBar({
 	return (
 		<div className="flex items-center gap-3 text-xs">
 			<span className="font-mono opacity-40 w-10 shrink-0">{axis.tag}</span>
-			<div className="flex-1 h-1.5 bg-white/10 rounded-full relative">
+			{/* Bar is purely decorative — numeric range in the adjacent span conveys the same info */}
+			<div className="flex-1 h-1.5 bg-white/10 rounded-full relative" aria-hidden="true">
 				<div
 					className="absolute h-full bg-white/60 rounded-full"
 					style={{ left: `${leftPct}%`, width: `${Math.max(widthPct, 0.5)}%` }}
@@ -485,6 +487,7 @@ function TextPreview({
 						onChange={(e) => setCustomText(e.target.value)}
 						placeholder="Type here…"
 						rows={2}
+						aria-label="Custom preview text rendered in this output font"
 						title="Type custom preview text to render in this output font"
 						style={{ fontFamily: '"vf-demo", sans-serif', fontVariationSettings: midpointSettings, resize: 'none' }}
 						className="w-full bg-transparent text-4xl leading-tight opacity-90 placeholder:opacity-20 focus:outline-none"
@@ -541,6 +544,8 @@ export default function Demo() {
 	const [processError, setProcessError]       = useState<string | null>(null)
 	const [tooltip, setTooltip]                 = useState<string | null>(null)
 	const [hasDemoFont, setHasDemoFont]         = useState(false)
+	// dragActive: true while a file is being dragged over the drop zone
+	const [dragActive, setDragActive]           = useState(false)
 	const [showCode, setShowCode]               = useState(false)
 	const [showAdvanced, setShowAdvanced]       = useState(false)
 	const [axisOverrides, setAxisOverrides]     = useState<Record<string, { min: number; max: number }>>({})
@@ -555,6 +560,8 @@ export default function Demo() {
 	const isLoadingRef        = useRef(false)
 	const containerRef        = useRef<HTMLDivElement>(null)
 	const warmedUpRef         = useRef(false)
+	// downloadDoneRef: incremented after each successful download — suppresses the cold-start hint on warm runs
+	const downloadDoneRef     = useRef(0)
 	const styleRef            = useRef<HTMLStyleElement | null>(null)
 	const progressIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
 	const previewRafRef       = useRef<number>(0)
@@ -659,6 +666,18 @@ export default function Demo() {
 		return s
 	}, [groups])
 
+	/** Code snippet — memoised so it isn't recomputed on every RAF tick. (#23) */
+	const codeSnippet = useMemo(
+		() => generateCode(groups, fontName, outputFormat, normalizeWeightAxis),
+		[groups, fontName, outputFormat, normalizeWeightAxis],
+	)
+
+	/** Pre-computed filenames for all groups — avoids calling groupFilename twice per group per render. (#24) */
+	const groupFilenames = useMemo(
+		() => groups.map((group) => groupFilename(group, axes, FORMAT_EXT[outputFormat], fontName, axisOverrides)),
+		[groups, axes, outputFormat, fontName, axisOverrides],
+	)
+
 	const loadFont = useCallback(async (buffer: Uint8Array<ArrayBuffer>, name: string) => {
 		if (isLoadingRef.current) return
 		isLoadingRef.current = true
@@ -719,19 +738,20 @@ export default function Demo() {
 		[loadFont],
 	)
 
-	function handleInputChange(e: React.ChangeEvent<HTMLInputElement>) {
+	const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
 		const file = e.target.files?.[0]
 		if (file) handleFile(file)
 		e.target.value = ''
-	}
+	}, [handleFile])
 
-	function handleDrop(e: React.DragEvent) {
+	const handleDrop = useCallback((e: React.DragEvent) => {
 		e.preventDefault()
+		setDragActive(false)
 		const file = e.dataTransfer.files[0]
 		if (file) handleFile(file)
-	}
+	}, [handleFile])
 
-	function toggleInstance(name: string) {
+	const toggleInstance = useCallback((name: string) => {
 		setSelected((prev) => {
 			const next = new Set(prev)
 			if (next.has(name)) next.delete(name)
@@ -740,14 +760,15 @@ export default function Demo() {
 		})
 		setNameTables({})
 		setExpandedNameTable(null)
-	}
+	}, [])
 
 	async function handleDownload() {
 		if (!fontBuffer || !groups.length) return
-		setProcessing(true)
-		setProcessError(null)
+		// Reset stage before setting processing=true so label starts at 0 on every run
 		setProcessingStage(0)
 		setProcessingProgress(0)
+		setProcessError(null)
+		setProcessing(true)
 
 		// Simulated staged progress: grows quickly then slows asymptotically toward 92%
 		let elapsed = 0
@@ -814,6 +835,7 @@ export default function Demo() {
 			})
 			setNameTables(parsedTables)
 			setOutputSizes(newOutputSizes)
+			downloadDoneRef.current += 1
 		} catch (err) {
 			setProcessError(err instanceof Error ? err.message : 'Processing failed')
 		} finally {
@@ -833,8 +855,13 @@ export default function Demo() {
 			{/* Upload zone */}
 			<div
 				onDrop={handleDrop}
-				onDragOver={(e) => e.preventDefault()}
-				className="flex flex-col sm:flex-row items-start sm:items-center gap-4 rounded-xl border border-dashed border-white/15 py-5 px-5 transition-colors hover:border-white/25"
+				onDragOver={(e) => { e.preventDefault(); setDragActive(true) }}
+				onDragLeave={() => setDragActive(false)}
+				className={[
+					'flex flex-col sm:flex-row items-start sm:items-center gap-4 rounded-xl border border-dashed py-5 px-5 transition-colors',
+					dragActive ? 'border-white/50 bg-white/5' : 'border-white/15 hover:border-white/25',
+				].join(' ')}
+				aria-label="Drop zone — drag a variable font file here to load it"
 			>
 				<div className="flex-1 min-w-0">
 					{(loadState === 'idle' || loadState === 'error') && (
@@ -924,6 +951,8 @@ export default function Demo() {
 													onClick={() => toggleInstance(inst.name)}
 													onMouseEnter={() => isIsolated && setTooltip(inst.name)}
 													onMouseLeave={() => setTooltip(null)}
+													onFocus={() => isIsolated && setTooltip(inst.name)}
+													onBlur={() => setTooltip(null)}
 													title={isSelected ? `Deselect ${inst.name}` : `Select ${inst.name} to include it in the restricted output`}
 													className={[
 														'flex flex-col gap-0.5 px-3 py-2 rounded-lg border text-left transition-all',
@@ -942,15 +971,19 @@ export default function Demo() {
 													)}
 												</button>
 
-												{tooltip === inst.name && (
-													<div
-														id={tooltipId}
-														role="tooltip"
-														className="absolute bottom-full left-0 mb-2 z-10 bg-[#0c1417] border border-amber-400/30 rounded-lg px-3 py-2 text-xs text-amber-300/80 whitespace-nowrap shadow-xl pointer-events-none"
-													>
-														⚠ No adjacent neighbours selected — generates a separate file
-													</div>
-												)}
+												{/* Tooltip kept in DOM so aria-describedby target always resolves; visibility via CSS */}
+												<div
+													id={tooltipId}
+													role="tooltip"
+													aria-hidden={tooltip !== inst.name}
+													className={[
+														'absolute bottom-full left-0 mb-2 z-10 bg-[#0c1417] border border-amber-400/30 rounded-lg px-3 py-2 text-xs text-amber-300/80 whitespace-nowrap shadow-xl pointer-events-none transition-opacity',
+														tooltip === inst.name ? 'opacity-100' : 'opacity-0',
+														isIsolated ? '' : 'hidden',
+													].join(' ')}
+												>
+													⚠ No adjacent neighbours selected — generates a separate file
+												</div>
 											</div>
 										)
 									})}
@@ -1003,6 +1036,7 @@ export default function Demo() {
 												min={axis.minimum}
 												max={curMax}
 												value={curMin}
+												aria-label={`${axis.name} (${axis.tag}) minimum value`}
 												onChange={(e) => {
 													const min = Math.max(axis.minimum, Math.min(Number(e.target.value), curMax))
 													setAxisOverrides((prev) => ({ ...prev, [axis.tag]: { min, max: curMax } }))
@@ -1010,12 +1044,13 @@ export default function Demo() {
 												title={`Minimum value for the ${axis.name} (${axis.tag}) axis in all output files (range: ${axis.minimum}–${axis.maximum})`}
 												className="w-20 bg-white/5 border border-white/10 rounded px-2 py-1 font-mono text-center focus:outline-none focus:border-white/30 transition-colors"
 											/>
-											<span className="opacity-20">–</span>
+											<span className="opacity-20" aria-hidden="true">–</span>
 											<input
 												type="number"
 												min={curMin}
 												max={axis.maximum}
 												value={curMax}
+												aria-label={`${axis.name} (${axis.tag}) maximum value`}
 												onChange={(e) => {
 													const max = Math.min(axis.maximum, Math.max(Number(e.target.value), curMin))
 													setAxisOverrides((prev) => ({ ...prev, [axis.tag]: { min: curMin, max } }))
@@ -1056,13 +1091,16 @@ export default function Demo() {
 						const label      = group.instances.length === 1
 							? first.name
 							: `${first.name} → ${last.name}`
-						const filename   = groupFilename(group, axes, FORMAT_EXT[outputFormat], fontName, axisOverrides)
+						const filename   = groupFilenames[i]
 						const isIsolated = group.instances.length === 1
 						const nameTable  = nameTables[i]
+						// Stable key derived from instance names — prevents React reusing DOM nodes
+						// across group count-stable but content-changed renders (fixes state bleed). (#17)
+						const groupKey = group.instances.map((inst) => inst.name).join('|')
 
 						return (
 							<div
-								key={i}
+								key={groupKey}
 								className={[
 									'rounded-xl border px-5 pt-5 pb-5 flex flex-col gap-5',
 									isIsolated ? 'border-amber-400/25' : 'border-white/10',
@@ -1159,10 +1197,14 @@ export default function Demo() {
 						)}
 						<div className="flex flex-wrap items-center gap-3">
 							<button
-								onClick={handleDownload}
-								disabled={processing}
+								onClick={processing ? undefined : handleDownload}
+								aria-disabled={processing}
+								aria-describedby={processing ? 'download-progress' : undefined}
 								title={processing ? 'Processing — please wait' : `Send the selected instances to the server and download ${groups.length === 1 ? '1 axis-restricted font file' : `${groups.length} axis-restricted font files`}`}
-								className="text-sm px-5 py-2.5 rounded-full border border-white/20 hover:bg-white/5 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+								className={[
+									'text-sm px-5 py-2.5 rounded-full border border-white/20 hover:bg-white/5 transition-colors',
+									processing ? 'opacity-30 cursor-not-allowed' : '',
+								].join(' ')}
 							>
 								{processing
 									? STAGE_LABELS[processingStage]
@@ -1170,11 +1212,16 @@ export default function Demo() {
 							</button>
 							{/* Format selector */}
 							{!processing && (
-								<div className="flex items-center rounded-full border border-white/15 overflow-hidden text-xs">
+								<div
+									role="group"
+									aria-label="Output format"
+									className="flex items-center rounded-full border border-white/15 overflow-hidden text-xs"
+								>
 									{(['ttf', 'otf', 'woff', 'woff2'] as OutputFormat[]).map((fmt) => (
 										<button
 											key={fmt}
 											onClick={() => setOutputFormat(fmt)}
+											aria-pressed={outputFormat === fmt}
 											title={
 												fmt === 'ttf'  ? 'Download as TrueType (.ttf) — best for desktop use' :
 												fmt === 'otf'  ? 'Download as OpenType CFF (.otf) — PostScript outlines, desktop use' :
@@ -1215,23 +1262,33 @@ export default function Demo() {
 						{!processing && (
 							<div className="flex flex-col gap-0.5">
 								{groups.map((group, i) => (
-								<p key={i} className="text-[10px] font-mono opacity-20">
-									{groupFilename(group, axes, FORMAT_EXT[outputFormat], fontName, axisOverrides)}
-								</p>
-							))}
+									<p key={group.instances.map((inst) => inst.name).join('|')} className="text-[10px] font-mono opacity-20">
+										{groupFilenames[i]}
+									</p>
+								))}
 							</div>
 						)}
 						{processing && (
-							<div className="flex flex-col gap-1.5">
-								<div className="h-0.5 bg-white/10 rounded-full overflow-hidden w-full max-w-xs">
+							<div id="download-progress" className="flex flex-col gap-1.5" aria-live="polite">
+								<div
+									role="progressbar"
+									aria-valuenow={Math.round(processingProgress)}
+									aria-valuemin={0}
+									aria-valuemax={100}
+									aria-label={STAGE_LABELS[processingStage]}
+									className="h-0.5 bg-white/10 rounded-full overflow-hidden w-full max-w-xs"
+								>
 									<div
 										className="h-full bg-white/50 rounded-full transition-all duration-500 ease-out"
 										style={{ width: `${processingProgress}%` }}
 									/>
 								</div>
-								<p className="text-[10px] opacity-25">
-									First run includes fonttools engine startup (~10 s)
-								</p>
+								{/* Show cold-start hint only on the first download (downloadDoneRef === 0) */}
+								{downloadDoneRef.current === 0 && (
+									<p className="text-[10px] opacity-25">
+										First run includes fonttools engine startup (~10 s)
+									</p>
+								)}
 							</div>
 						)}
 					</div>
@@ -1247,7 +1304,7 @@ export default function Demo() {
 						</button>
 						{showCode && (
 							<pre className="bg-white/5 rounded-xl p-4 overflow-x-auto text-xs leading-relaxed font-mono opacity-75 whitespace-pre">
-								<code>{generateCode(groups, fontName, outputFormat, normalizeWeightAxis)}</code>
+								<code>{codeSnippet}</code>
 							</pre>
 						)}
 					</div>

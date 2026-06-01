@@ -3,7 +3,7 @@ import { ImageResponse } from 'next/og'
 import { readFile } from 'node:fs/promises'
 import { join } from 'node:path'
 
-export const alt = 'vf-clamp — Select named instances, restrict variable font axis ranges, download clamped VF files'
+export const alt = 'vf-clamp — Restrict variable font axis ranges'
 export const size = { width: 1200, height: 630 }
 export const contentType = 'image/png'
 
@@ -42,7 +42,7 @@ export default async function Image() {
 						<span>TypeScript</span><span style={{ opacity: 0.4 }}>·</span>
 						<span>fonttools varLib.instancer</span><span style={{ opacity: 0.4 }}>·</span>
 						<span>Pyodide WASM</span><span style={{ opacity: 0.4 }}>·</span>
-						<span>TTF + WOFF2</span>
+						<span>TTF · OTF · WOFF · WOFF2</span>
 					</div>
 					<div style={{ fontSize: 13, color: 'rgba(255,255,255,0.18)', letterSpacing: '0.04em' }}>vfclamp.com</div>
 				</div>
