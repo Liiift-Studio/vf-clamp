@@ -12,6 +12,8 @@ import { preparePyodide, PyodideFile } from './pyodide.js'
 let _namePatcherFnP: Promise<(fileOptions: Map<string, string>) => void> | null = null
 let _instancerFnP: Promise<(fileOptions: Map<string, string>, axesJson: string) => void> | null = null
 let _normalizerFnP: Promise<(fileOptions: Map<string, string>, newMin: string) => void> | null = null
+let _statPrunerFnP: Promise<(fileOptions: Map<string, string>) => void> | null = null
+let _os2UpdaterFnP: Promise<(fileOptions: Map<string, string>) => void> | null = null
 
 async function getNamePatcher() {
 	if (!_namePatcherFnP) {
@@ -29,9 +31,27 @@ def patch_font_names_fn(file_options):
     existing_ids = {r.nameID for r in name_table.names}
 
     # nameID 1 = Family, 4 = Full name, 6 = PostScript name
+    # nameID 2 = Subfamily — reset to 'Regular' so the restricted file does not
+    #            collide with the source font's Subfamily in OS font caches.
+    # nameID 3 = Unique ID — regenerate so it is distinct from the source font.
     # nameID 16 = Preferred family (update only if present)
     # nameID 25 = Variations PS Name Prefix (update only if present)
-    updates = {1: family_name, 4: family_name, 6: ps_name}
+    #
+    # head.fontRevision is a Fixed value (e.g. 1.000). Fall back to '1.000' if
+    # the head table is unreadable.
+    try:
+        version = '%.3f' % font['head'].fontRevision
+    except Exception:
+        version = '1.000'
+    unique_id = '%s;%s;%s' % (version, ps_name, family_name)
+
+    updates = {
+        1: family_name,
+        2: 'Regular',
+        3: unique_id,
+        4: family_name,
+        6: ps_name,
+    }
     if 16 in existing_ids:
         updates[16] = family_name
     if 25 in existing_ids:
@@ -179,6 +199,145 @@ vf_clamp_normalize_wght
 }
 
 /**
+ * Prune STAT AxisValueRecords that reference an axis no longer present in fvar.
+ * After the instancer pins/removes axes, the STAT table can still carry stale
+ * AxisIndex references to removed axes — these confuse OS font selection.
+ *
+ * Format 1/2/3 records reference a single AxisIndex; remove if it is dead.
+ * Format 4 records reference multiple AxisValueRecords; remove the entire record
+ * if any inner AxisValueRecord points at a dead axis.
+ *
+ * After removal, surviving AxisIndex values are remapped to the new fvar order.
+ */
+async function getStatPruner() {
+	if (!_statPrunerFnP) {
+		// eslint-disable-next-line @typescript-eslint/no-explicit-any
+		_statPrunerFnP = preparePyodide().then((pyodide: any) =>
+			pyodide.runPythonAsync(`
+from fontTools.ttLib import TTFont
+
+def vf_clamp_prune_stat(file_options):
+    font = TTFont(file_options['input-file'])
+
+    if 'STAT' not in font or 'fvar' not in font:
+        font.save(file_options['output-file'])
+        return
+
+    stat = font['STAT'].table
+    if not getattr(stat, 'DesignAxisRecord', None) or not stat.DesignAxisRecord.Axis:
+        font.save(file_options['output-file'])
+        return
+
+    fvar_tags = {ax.axisTag for ax in font['fvar'].axes}
+    stat_axes = list(stat.DesignAxisRecord.Axis)
+
+    # Map old STAT AxisIndex -> new index after pruning STAT axes that vanish from fvar.
+    surviving_indices = [i for i, ax in enumerate(stat_axes) if ax.AxisTag in fvar_tags]
+    if len(surviving_indices) == len(stat_axes):
+        # No axes removed — nothing to prune.
+        font.save(file_options['output-file'])
+        return
+    old_to_new = {old: new for new, old in enumerate(surviving_indices)}
+
+    # Rewrite the DesignAxisRecord.Axis list to surviving axes only.
+    stat.DesignAxisRecord.Axis = [stat_axes[i] for i in surviving_indices]
+    if hasattr(stat, 'DesignAxisCount'):
+        stat.DesignAxisCount = len(stat.DesignAxisRecord.Axis)
+
+    # Prune AxisValueArray entries that reference removed axes.
+    if stat.AxisValueArray and stat.AxisValueArray.AxisValue:
+        kept = []
+        for av in stat.AxisValueArray.AxisValue:
+            fmt = av.Format
+            if fmt in (1, 2, 3):
+                if av.AxisIndex not in old_to_new:
+                    continue  # references a removed axis
+                av.AxisIndex = old_to_new[av.AxisIndex]
+                kept.append(av)
+            elif fmt == 4:
+                inner = list(getattr(av, 'AxisValueRecord', []) or [])
+                if any(rec.AxisIndex not in old_to_new for rec in inner):
+                    continue  # whole record dies if any inner ref is dead
+                for rec in inner:
+                    rec.AxisIndex = old_to_new[rec.AxisIndex]
+                kept.append(av)
+            else:
+                # Unknown format — keep as-is to be safe.
+                kept.append(av)
+        stat.AxisValueArray.AxisValue = kept
+        if hasattr(stat, 'AxisValueCount'):
+            stat.AxisValueCount = len(kept)
+
+    font.save(file_options['output-file'])
+
+vf_clamp_prune_stat
+`)
+		)
+	}
+	return _statPrunerFnP!
+}
+
+/**
+ * Update OS/2.usWeightClass, OS/2.fsSelection, and head.macStyle to reflect
+ * the new wght default after clamping. Without this, the OS reports the
+ * restricted file with the source font's original weight metadata.
+ */
+async function getOs2Updater() {
+	if (!_os2UpdaterFnP) {
+		// eslint-disable-next-line @typescript-eslint/no-explicit-any
+		_os2UpdaterFnP = preparePyodide().then((pyodide: any) =>
+			pyodide.runPythonAsync(`
+from fontTools.ttLib import TTFont
+
+def vf_clamp_update_os2(file_options):
+    font = TTFont(file_options['input-file'])
+
+    if 'fvar' not in font:
+        font.save(file_options['output-file'])
+        return
+
+    wght_axis = next((ax for ax in font['fvar'].axes if ax.axisTag == 'wght'), None)
+    if wght_axis is None:
+        font.save(file_options['output-file'])
+        return
+
+    new_default = wght_axis.defaultValue
+    # OS/2.usWeightClass valid range is 1..1000.
+    weight_class = int(round(max(1, min(1000, new_default))))
+
+    if 'OS/2' in font:
+        os2 = font['OS/2']
+        os2.usWeightClass = weight_class
+        # fsSelection bits: 0x20 = BOLD, 0x40 = REGULAR.
+        # Mirror the convention: REGULAR when usWeightClass < 600, BOLD when >= 700.
+        fs = os2.fsSelection
+        fs &= ~(0x20 | 0x40)
+        if weight_class >= 700:
+            fs |= 0x20  # BOLD
+        elif weight_class < 600:
+            fs |= 0x40  # REGULAR
+        os2.fsSelection = fs
+
+    if 'head' in font:
+        head = font['head']
+        # macStyle bit 0 = bold.
+        ms = head.macStyle
+        if weight_class >= 700:
+            ms |= 0x01
+        else:
+            ms &= ~0x01
+        head.macStyle = ms
+
+    font.save(file_options['output-file'])
+
+vf_clamp_update_os2
+`)
+		)
+	}
+	return _os2UpdaterFnP!
+}
+
+/**
  * Convert a human-readable family name to a valid PostScript name.
  * Removes non-ASCII/non-alphanumeric characters, replaces spaces with hyphens,
  * strips leading/trailing hyphens, and truncates to the 63-character OpenType limit.
@@ -255,6 +414,62 @@ async function runInstancer(bytes: Uint8Array | Buffer, instancerAxes: Record<st
 
 		const result = outputFile.download()
 		return result as Uint8Array
+	} finally {
+		try { inputFile.delete() } catch { /* already cleaned */ }
+		try { outputFile.delete() } catch { /* already cleaned */ }
+	}
+}
+
+/** Prune STAT AxisValueRecords that reference axes removed by the instancer */
+async function runStatPruner(bytes: Uint8Array): Promise<Uint8Array> {
+	const pyodide = await preparePyodide()
+	const inputFile  = new PyodideFile({ pyodide })
+	const outputFile = new PyodideFile({ pyodide })
+
+	try {
+		await inputFile.upload(bytes)
+
+		const fileOptions = new Map([
+			['input-file',  inputFile.filename],
+			['output-file', outputFile.filename],
+		])
+
+		const fn = await getStatPruner()
+		fn(fileOptions)
+
+		const result = outputFile.download()
+		return result as Uint8Array
+	} catch (err) {
+		console.warn('vf-clamp: STAT prune failed — returning unpruned buffer', err)
+		return bytes
+	} finally {
+		try { inputFile.delete() } catch { /* already cleaned */ }
+		try { outputFile.delete() } catch { /* already cleaned */ }
+	}
+}
+
+/** Update OS/2.usWeightClass, fsSelection, and head.macStyle from the new wght default */
+async function runOs2Updater(bytes: Uint8Array): Promise<Uint8Array> {
+	const pyodide = await preparePyodide()
+	const inputFile  = new PyodideFile({ pyodide })
+	const outputFile = new PyodideFile({ pyodide })
+
+	try {
+		await inputFile.upload(bytes)
+
+		const fileOptions = new Map([
+			['input-file',  inputFile.filename],
+			['output-file', outputFile.filename],
+		])
+
+		const fn = await getOs2Updater()
+		fn(fileOptions)
+
+		const result = outputFile.download()
+		return result as Uint8Array
+	} catch (err) {
+		console.warn('vf-clamp: OS/2 + macStyle update failed — returning original buffer', err)
+		return bytes
 	} finally {
 		try { inputFile.delete() } catch { /* already cleaned */ }
 		try { outputFile.delete() } catch { /* already cleaned */ }
@@ -403,10 +618,18 @@ export async function clampFont(
 
 		let buffer = await runInstancer(bytes, instancerAxes)
 
+		// Prune STAT records that reference axes pinned/removed by the instancer.
+		// Must run before OS/2 update + name patching so they see a clean table.
+		buffer = await runStatPruner(buffer)
+
 		// Optionally remap wght axis to CSS 100–900 range
 		if (options.normalizeWeightAxis) {
 			buffer = await runNormalizer(buffer, 100)
 		}
+
+		// Sync OS/2.usWeightClass + head.macStyle to the new wght default so the
+		// OS reports the restricted file with the correct weight metadata.
+		buffer = await runOs2Updater(buffer)
 
 		// Update the name table so the restricted font reflects its actual instance range
 		buffer = await patchFontNames(buffer, name)

@@ -14,7 +14,7 @@ import { getInstances } from '../core/instances.js'
 // NOTE: The test module is NOT isolated between tests (vi.isolateModules not used),
 // so the Promise caches remain warm after the first test that populates them.
 
-const { MockPyodideFile, mockInstancerFn, mockPatcherFn, mockNormalizerFn, mockRunPythonAsync, capturedCalls, resetState } =
+const { MockPyodideFile, mockInstancerFn, mockPatcherFn, mockNormalizerFn, mockStatPrunerFn, mockOs2UpdaterFn, mockRunPythonAsync, capturedCalls, resetState } =
 	vi.hoisted(() => {
 		const fileStore = new Map<string, { bytes: Uint8Array }>()
 		let fileCounter = 0
@@ -35,23 +35,21 @@ const { MockPyodideFile, mockInstancerFn, mockPatcherFn, mockNormalizerFn, mockR
 			delete() { fileStore.delete(this.filename) }
 		}
 
-		const mockPatcherFn   = vi.fn((opts: Map<string, string>) => {
+		// Copy bytes from input to output file slot — common to all stages.
+		function copyInputToOutput(opts: Map<string, string>) {
 			const s = fileStore.get(opts.get('input-file')!)
 			const d = fileStore.get(opts.get('output-file')!)
 			if (s && d) d.bytes = new Uint8Array(s.bytes)
-		})
+		}
+
+		const mockPatcherFn    = vi.fn((opts: Map<string, string>) => copyInputToOutput(opts))
+		const mockStatPrunerFn = vi.fn((opts: Map<string, string>) => copyInputToOutput(opts))
+		const mockOs2UpdaterFn = vi.fn((opts: Map<string, string>) => copyInputToOutput(opts))
+		const mockNormalizerFn = vi.fn((opts: Map<string, string>) => copyInputToOutput(opts))
 
 		const mockInstancerFn = vi.fn((opts: Map<string, string>, axesJson: string) => {
 			capturedCalls.push({ axesJson })
-			const s = fileStore.get(opts.get('input-file')!)
-			const d = fileStore.get(opts.get('output-file')!)
-			if (s && d) d.bytes = new Uint8Array(s.bytes)
-		})
-
-		const mockNormalizerFn = vi.fn((opts: Map<string, string>) => {
-			const s = fileStore.get(opts.get('input-file')!)
-			const d = fileStore.get(opts.get('output-file')!)
-			if (s && d) d.bytes = new Uint8Array(s.bytes)
+			copyInputToOutput(opts)
 		})
 
 		function resetState() {
@@ -61,15 +59,23 @@ const { MockPyodideFile, mockInstancerFn, mockPatcherFn, mockNormalizerFn, mockR
 			mockPatcherFn.mockClear()
 			mockInstancerFn.mockClear()
 			mockNormalizerFn.mockClear()
+			mockStatPrunerFn.mockClear()
+			mockOs2UpdaterFn.mockClear()
 		}
 
-		// runPythonAsync returns mock functions in initialization order (cached after first call).
-		const mockRunPythonAsync = vi.fn()
-			.mockResolvedValueOnce(mockInstancerFn)   // 1st init: instancer
-			.mockResolvedValueOnce(mockPatcherFn)     // 2nd init: patcher
-			.mockResolvedValueOnce(mockNormalizerFn)  // 3rd init: normalizer (normalizeWeightAxis tests)
+		// Dispatch runPythonAsync by inspecting the Python source. The Promise-singleton
+		// caches in clamp.ts mean each helper is initialised at most once per process, so
+		// this is order-independent and survives the test file's lack of module isolation.
+		const mockRunPythonAsync = vi.fn(async (source: string) => {
+			if (source.includes('vf_clamp_instantiate')) return mockInstancerFn
+			if (source.includes('patch_font_names_fn')) return mockPatcherFn
+			if (source.includes('vf_clamp_normalize_wght')) return mockNormalizerFn
+			if (source.includes('vf_clamp_prune_stat')) return mockStatPrunerFn
+			if (source.includes('vf_clamp_update_os2')) return mockOs2UpdaterFn
+			throw new Error('Unrecognised Python source in test mock: ' + source.slice(0, 80))
+		})
 
-		return { MockPyodideFile, mockInstancerFn, mockPatcherFn, mockNormalizerFn, mockRunPythonAsync, capturedCalls, resetState }
+		return { MockPyodideFile, mockInstancerFn, mockPatcherFn, mockNormalizerFn, mockStatPrunerFn, mockOs2UpdaterFn, mockRunPythonAsync, capturedCalls, resetState }
 	})
 
 vi.mock('../core/pyodide.js', () => ({
