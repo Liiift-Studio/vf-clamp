@@ -4,7 +4,7 @@
 
 :root {
 	--background: oklch(0.12 0.0400 263);
-	--foreground: oklch(0.93 0.03 263);          /* primary — headings, lead, card titles */
+	--foreground: oklch(0.97 0.008 263);          /* primary — headings, lead, card titles */
 	--foreground-muted: oklch(0.78 0.025 263);   /* secondary — body copy + labels (was opacity-50/60/70) */
 	--foreground-subtle: oklch(0.66 0.020 263);  /* tertiary — code samples, hero italic line */
 	--foreground-faint: oklch(0.55 0.016 263);   /* decoration only — step numerals, never body */
