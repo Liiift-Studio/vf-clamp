@@ -90,9 +90,28 @@ vf-clamp/
 │   ├── glyphs/             → Liiift-Studio/vf-clamp-glyphs
 │   ├── robofont/           → Liiift-Studio/vf-clamp-robofont
 │   └── vscode/             → Liiift-Studio/vf-clamp-vscode
+├── shared/
+│   └── plugin-views/       # canonical hull_plot.py + preview_view.py
+│                           # synced into glyphs and robofont plugins
+│                           # via `npm run sync-plugin-views`
+├── scripts/
+│   └── sync-plugin-views.sh
 └── fixtures/
     └── Inter-Variable.ttf  # test font (wght 100–900, slnt -10–0)
 ```
+
+---
+
+## Shared plugin views (NSView modules)
+
+The Glyphs and RoboFont plugins both render the same design-space chart and animated specimen via two framework-agnostic NSView subclasses: `hull_plot.py` and `preview_view.py`. The canonical source lives in `shared/plugin-views/`; the two plugin bundles get byte-identical copies via:
+
+```bash
+npm run sync-plugin-views          # copies, commits, pushes
+npm run sync-plugin-views:check    # dry-run — reports drift only
+```
+
+**Workflow**: edit `shared/plugin-views/*.py`, then run the sync. The script commits each affected submodule as Liiift and pushes. Never edit the in-bundle copies directly — the next sync will overwrite them.
 
 ---
 

@@ -20,6 +20,8 @@
 		"test": "vitest",
 		"test:run": "vitest run",
 		"lint": "tsc --noEmit",
+		"sync-plugin-views": "bash scripts/sync-plugin-views.sh",
+		"sync-plugin-views:check": "bash scripts/sync-plugin-views.sh --dry-run",
 		"prepublishOnly": "npm run test:run && npm run build"
 	},
 	"dependencies": {
