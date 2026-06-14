@@ -1,0 +1,80 @@
+name: plugin-views sync
+
+# Refuses a PR that ships a hand-edit to either plugin's hull_plot.py or
+# preview_view.py without updating the canonical source in
+# vfClamp/shared/plugin-views/ first. Catches the regression class where a
+# fix lands in one plugin and silently drifts from the other.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+    paths:
+      - 'shared/plugin-views/**'
+      - 'plugins/glyphs/**/hull_plot.py'
+      - 'plugins/glyphs/**/preview_view.py'
+      - 'plugins/robofont/**/hull_plot.py'
+      - 'plugins/robofont/**/preview_view.py'
+      - 'scripts/sync-plugin-views.sh'
+      - '.github/workflows/plugin-views-sync.yml'
+
+jobs:
+  check:
+    name: Check plugin-views are in sync
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout (with submodules)
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          # Submodules are pinned commits in the parent. Use the parent's
+          # pinned SHA — we want to verify the *committed* plugin source
+          # matches the canonical source as of the same commit, not
+          # whatever main happens to be in the submodule's upstream.
+          fetch-depth: 0
+
+      - name: Verify shared/plugin-views/ exists
+        run: |
+          test -f shared/plugin-views/hull_plot.py
+          test -f shared/plugin-views/preview_view.py
+
+      - name: Verify both plugins' copies match canonical
+        run: |
+          # cmp exit 0 = identical, 1 = different, 2 = error. Set -e turns
+          # any non-zero into a job failure — exactly what we want.
+          cmp shared/plugin-views/hull_plot.py \
+              plugins/glyphs/vf-clamp.glyphsPlugin/Contents/Resources/hull_plot.py
+          cmp shared/plugin-views/preview_view.py \
+              plugins/glyphs/vf-clamp.glyphsPlugin/Contents/Resources/preview_view.py
+          cmp shared/plugin-views/hull_plot.py \
+              plugins/robofont/vf-clamp.roboFontExt/lib/vfClamp/hull_plot.py
+          cmp shared/plugin-views/preview_view.py \
+              plugins/robofont/vf-clamp.roboFontExt/lib/vfClamp/preview_view.py
+
+      - name: Dry-run report (on success — for the run log)
+        if: success()
+        run: bash scripts/sync-plugin-views.sh --dry-run
+
+      - name: Drift help (on failure)
+        if: failure()
+        run: |
+          cat >&2 <<'EOF'
+
+          One or both plugin bundles ship a copy of hull_plot.py or
+          preview_view.py that does NOT match shared/plugin-views/.
+
+          The canonical source lives in shared/plugin-views/. To fix:
+
+            1. Make your edit in shared/plugin-views/.
+            2. Run `npm run sync-plugin-views` locally to propagate
+               the change into both plugin bundles + commit each
+               submodule.
+            3. Push the resulting submodule commits and re-push this
+               PR with the updated pointers.
+
+          If you intended to hand-edit a single plugin's copy (e.g. for
+          a Glyphs-only or RoboFont-only behaviour), the file probably
+          shouldn't be in shared/ in the first place — open an issue.
+          EOF
+          exit 1
