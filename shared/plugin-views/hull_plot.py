@@ -620,16 +620,16 @@ if _APPKIT_AVAILABLE:
 			ticks.setLineWidth_(1.5)
 			ticks.stroke()
 
-			# Corner numeric labels — anchored INSIDE the chart at all four
-			# corners. Putting them inside keeps everything within the view
-			# bounds (the chart sits at PLOT_PAD=16, so there isn't enough
-			# left/right margin for external labels) and makes the chart
-			# read like a coordinate plane.
+			# Corner numeric labels — anchored OUTSIDE the chart at all four
+			# corners (v1.2.18). The previous INSIDE-the-chart anchoring
+			# overlapped instance dots near the axis extremes — a user
+			# screenshot on Daith Adv showed "100,8" colliding with the
+			# bottom-left dot and "336" colliding with the bottom-right.
+			# Moving them just outside the border eliminates the overlap
+			# and frees the chart interior of any text.
 			#
-			# v1.2.14: bumped from secondaryLabelColor → labelColor after
-			# the Accessibility Engineer flagged the secondary tier as
-			# insufficient contrast against the dark Glyphs panel for
-			# WCAG AA compliance.
+			# y_max sits ABOVE the chart in the PLOT_PAD region; x_min/y_min
+			# and x_max sit BELOW the border on their own row.
 			corner_attrs = {
 				NSForegroundColorAttributeName: NSColor.labelColor(),
 				NSFontAttributeName: NSFont.systemFontOfSize_(9.5),
@@ -638,21 +638,25 @@ if _APPKIT_AVAILABLE:
 				NSAttributedString.alloc().initWithString_attributes_(
 					text, corner_attrs,
 				).drawAtPoint_(pt)
-			INSET = 4
-			# Bottom-left: x_min, y_min (chart origin).
-			_corner(
-				f'{ax_x_min:g},{ax_y_min:g}',
-				NSMakePoint(plot_x + INSET, plot_y + plot_h - 13),
-			)
-			# Bottom-right: x_max.
-			_corner(
-				f'{ax_x_max:g}',
-				NSMakePoint(plot_x + plot_w - 28, plot_y + plot_h - 13),
-			)
-			# Top-left: y_max (top in flipped coords).
+			# Top-left, just above the chart border (uses PLOT_PAD).
 			_corner(
 				f'{ax_y_max:g}',
-				NSMakePoint(plot_x + INSET, plot_y + INSET),
+				NSMakePoint(plot_x + 2, plot_y - 12),
+			)
+			# Bottom-left, just below the chart border.
+			_corner(
+				f'{ax_x_min:g},{ax_y_min:g}',
+				NSMakePoint(plot_x + 2, plot_y + plot_h + 2),
+			)
+			# Bottom-right, just below the chart border. Right-aligned via a
+			# measured width so axis maxes like 900 don't run off the edge.
+			x_max_str = f'{ax_x_max:g}'
+			x_max_width = NSAttributedString.alloc().initWithString_attributes_(
+				x_max_str, corner_attrs,
+			).size().width
+			_corner(
+				x_max_str,
+				NSMakePoint(plot_x + plot_w - x_max_width - 2, plot_y + plot_h + 2),
 			)
 
 			# Hull rect. Map values into an inset rectangle so dots at the
@@ -792,16 +796,11 @@ if _APPKIT_AVAILABLE:
 				except (TypeError, ValueError):
 					pass
 
-			# Axis labels under the plot. Hull range first (what's licensed),
-			# full font range second in muted text so the user can see the
-			# selection in the context of the design space. Axes whose
-			# selection collapses to a single value get a "pinned" tag
-			# instead of an awkward "253–253" range.
-			#
-			# v1.2.15 defensive layout: for fonts with multiple long axis
-			# tags (GRAD, XTRA, MONO) the combined " on one line"
-			# rendering ran off the chart. Measure first, then split onto
-			# two stacked lines per axis if a single line would overflow.
+			# Selection range label — single line below the corner labels.
+			# Shifted down 14 px (v1.2.18) to clear the new outside corner
+			# numeric labels (x_min, x_max) drawn at plot_y + plot_h + 2.
+			# The previous v1.2.15 "full:" subtext line is gone — corner
+			# labels show the same axis-bound info more concisely.
 			def _fmt(tag, lo, hi):
 				if lo == hi:
 					return f'{tag}: pinned {lo:g}'
@@ -818,43 +817,13 @@ if _APPKIT_AVAILABLE:
 			single_w = NSAttributedString.alloc().initWithString_attributes_(
 				single, measure_attrs,
 			).size().width
+			# 16 px below the corner labels (which sit at plot_y + plot_h + 2).
+			label_y = plot_y + plot_h + 16
 			if single_w <= available_w:
-				self._draw_label(single, NSMakePoint(pad, plot_y + plot_h + 2))
-				full_y = plot_y + plot_h + 16
+				self._draw_label(single, NSMakePoint(pad, label_y))
 			else:
-				# Stack each axis on its own line.
-				self._draw_label(part_x, NSMakePoint(pad, plot_y + plot_h + 2))
-				self._draw_label(part_y, NSMakePoint(pad, plot_y + plot_h + 14))
-				full_y = plot_y + plot_h + 28
-			# Full-range subtext also gets the same wrap treatment.
-			full_x = f'full: {tag_x} {ax_x_min:g}–{ax_x_max:g}'
-			full_y_part = f'{tag_y} {ax_y_min:g}–{ax_y_max:g}'
-			full_single = f'{full_x}   {full_y_part}'
-			full_measure = NSAttributedString.alloc().initWithString_attributes_(
-				full_single,
-				{NSFontAttributeName: NSFont.systemFontOfSize_(9.0)},
-			).size().width
-			try:
-				attrs = {
-					NSForegroundColorAttributeName: NSColor.tertiaryLabelColor(),
-					NSFontAttributeName: NSFont.systemFontOfSize_(9.0),
-				}
-				if full_measure <= available_w:
-					s = NSAttributedString.alloc().initWithString_attributes_(
-						full_single, attrs,
-					)
-					s.drawAtPoint_(NSMakePoint(pad, full_y))
-				else:
-					s1 = NSAttributedString.alloc().initWithString_attributes_(
-						full_x, attrs,
-					)
-					s2 = NSAttributedString.alloc().initWithString_attributes_(
-						f'      {full_y_part}', attrs,
-					)
-					s1.drawAtPoint_(NSMakePoint(pad, full_y))
-					s2.drawAtPoint_(NSMakePoint(pad, full_y + 12))
-			except Exception:
-				pass
+				self._draw_label(part_x, NSMakePoint(pad, label_y))
+				self._draw_label(part_y, NSMakePoint(pad, label_y + 12))
 
 		def _draw_label(self, text, point):
 			"""Render a small primary-color label at ``point``."""
