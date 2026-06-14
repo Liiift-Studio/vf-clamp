@@ -113,10 +113,10 @@ export default function Home() {
 						</div>
 					</div>
 
-					{/* Glyphs.app */}
-					<div className="flex flex-col gap-3 rounded-xl p-6" style={{ background: "rgba(0,0,0,0.2)" }}>
+					{/* Glyphs.app + RoboFont — combined card, shared screenshot */}
+					<div className="flex flex-col gap-3 rounded-xl p-6 sm:col-span-2" style={{ background: "rgba(0,0,0,0.2)" }}>
 						<div className="flex items-center gap-3">
-							{/* Glyphs.app: bezier path with anchor + handle nodes — the signature Glyphs UI motif */}
+							{/* Glyphs.app: bezier path with anchor + handle nodes */}
 							<svg width="18" height="18" viewBox="0 0 18 18" fill="none" className="opacity-60" aria-hidden="true">
 								<path d="M3 15C4 9 9 4 15 3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
 								<circle cx="3" cy="15" r="2" fill="currentColor"/>
@@ -126,25 +126,7 @@ export default function Home() {
 								<circle cx="3" cy="8" r="1.5" fill="none" stroke="currentColor" strokeWidth="1" opacity="0.65"/>
 								<circle cx="8" cy="3" r="1.5" fill="none" stroke="currentColor" strokeWidth="1" opacity="0.65"/>
 							</svg>
-							<span className="text-sm font-semibold">Glyphs.app</span>
-						</div>
-						<p className="text-xs text-muted leading-relaxed">
-							Native Glyphs plugin. Select named instances from your open font, choose a format, and export restricted VFs — all without leaving the app.
-						</p>
-						<div className="rounded-lg border border-white/10 overflow-hidden bg-black/30 flex items-center justify-center h-80">
-							<img src="/screenshots/glyphs.png" alt="vf-clamp Glyphs plugin: design-space chart + animated specimen" className="max-h-full max-w-full object-contain" />
-						</div>
-						<code className="text-xs font-mono text-subtle">vf-clamp-glyphs.glyphsPlugin</code>
-						<div className="flex items-center gap-2 mt-auto pt-3">
-							<a href="https://github.com/Liiift-Studio/vf-clamp-glyphs/releases/latest/download/vf-clamp-glyphs.zip" target="_blank" rel="noopener noreferrer" className="flex-1 text-center text-xs font-medium py-2 px-3 rounded-lg bg-white/10 hover:bg-white/15 transition-colors">Download ↗</a>
-							<a href="https://github.com/Liiift-Studio/vf-clamp-glyphs" target="_blank" rel="noopener noreferrer" className="flex-1 text-center text-xs py-2 px-3 rounded-lg border border-white/15 hover:border-white/30 hover:bg-white/5 transition-colors text-muted hover:text-foreground">GitHub ↗</a>
-						</div>
-					</div>
-
-					{/* RoboFont */}
-					<div className="flex flex-col gap-3 rounded-xl p-6" style={{ background: "rgba(0,0,0,0.2)" }}>
-						<div className="flex items-center gap-3">
-							{/* RoboFont: robot face — antenna, eyes, mouth */}
+							{/* RoboFont: robot face */}
 							<svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" className="opacity-60" aria-hidden="true">
 								<rect x="3" y="7" width="12" height="9" rx="2" strokeWidth="1.4"/>
 								<line x1="9" y1="7" x2="9" y2="4" strokeWidth="1.4"/>
@@ -153,18 +135,29 @@ export default function Home() {
 								<circle cx="11.5" cy="11.5" r="1.5" fill="currentColor" stroke="none"/>
 								<path d="M6 14.5h6" strokeWidth="1.4" strokeLinecap="round"/>
 							</svg>
-							<span className="text-sm font-semibold">RoboFont</span>
+							<span className="text-sm font-semibold">Glyphs.app &amp; RoboFont</span>
 						</div>
-						<p className="text-xs text-muted leading-relaxed">
-							RoboFont extension using fonttools directly. Pick instances from any open UFO-based variable font and export clamped outputs from the Extensions menu.
+						<p className="text-xs text-muted leading-relaxed max-w-2xl">
+							Native plugins for Glyphs.app and RoboFont. Select named instances from your open font (or a TTF/OTF on disk), preview the licensed design space in a live chart with an animated specimen, and export restricted VFs — without leaving your type editor. Both plugins share the same UI; pick the one for your tool.
 						</p>
-						<div className="rounded-lg border border-white/10 overflow-hidden bg-black/30 flex items-center justify-center h-80">
-							<img src="/screenshots/robofont.png" alt="vf-clamp RoboFont extension: full dialog with design-space chart + animated specimen + LOG pane" className="max-h-full max-w-full object-contain" />
+						<div className="rounded-lg border border-white/10 overflow-hidden bg-black/30 flex items-center justify-center">
+							<img src="/screenshots/glyphs-robofont.png" alt="vf-clamp dialog inside Glyphs.app — RoboFont uses the same UI" className="max-w-full h-auto" />
 						</div>
-						<code className="text-xs font-mono text-subtle">vf-clamp.roboFontExt</code>
-						<div className="flex items-center gap-2 mt-auto pt-3">
-							<a href="https://github.com/Liiift-Studio/vf-clamp-robofont/releases/latest/download/vf-clamp-robofont.zip" target="_blank" rel="noopener noreferrer" className="flex-1 text-center text-xs font-medium py-2 px-3 rounded-lg bg-white/10 hover:bg-white/15 transition-colors">Download ↗</a>
-							<a href="https://github.com/Liiift-Studio/vf-clamp-robofont" target="_blank" rel="noopener noreferrer" className="flex-1 text-center text-xs py-2 px-3 rounded-lg border border-white/15 hover:border-white/30 hover:bg-white/5 transition-colors text-muted hover:text-foreground">GitHub ↗</a>
+						<div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-auto pt-3">
+							<div className="flex flex-col gap-2">
+								<code className="text-xs font-mono text-subtle">vf-clamp-glyphs.glyphsPlugin</code>
+								<div className="flex gap-2">
+									<a href="https://github.com/Liiift-Studio/vf-clamp-glyphs/releases/latest/download/vf-clamp-glyphs.zip" target="_blank" rel="noopener noreferrer" className="flex-1 text-center text-xs font-medium py-2 px-3 rounded-lg bg-white/10 hover:bg-white/15 transition-colors">Glyphs.app ↗</a>
+									<a href="https://github.com/Liiift-Studio/vf-clamp-glyphs" target="_blank" rel="noopener noreferrer" className="flex-1 text-center text-xs py-2 px-3 rounded-lg border border-white/15 hover:border-white/30 hover:bg-white/5 transition-colors text-muted hover:text-foreground">GitHub ↗</a>
+								</div>
+							</div>
+							<div className="flex flex-col gap-2">
+								<code className="text-xs font-mono text-subtle">vf-clamp.roboFontExt</code>
+								<div className="flex gap-2">
+									<a href="https://github.com/Liiift-Studio/vf-clamp-robofont/releases/latest/download/vf-clamp-robofont.zip" target="_blank" rel="noopener noreferrer" className="flex-1 text-center text-xs font-medium py-2 px-3 rounded-lg bg-white/10 hover:bg-white/15 transition-colors">RoboFont ↗</a>
+									<a href="https://github.com/Liiift-Studio/vf-clamp-robofont" target="_blank" rel="noopener noreferrer" className="flex-1 text-center text-xs py-2 px-3 rounded-lg border border-white/15 hover:border-white/30 hover:bg-white/5 transition-colors text-muted hover:text-foreground">GitHub ↗</a>
+								</div>
+							</div>
 						</div>
 					</div>
 
