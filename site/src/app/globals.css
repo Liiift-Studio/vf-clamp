@@ -11,14 +11,3 @@
 	--accent: rgba(80, 190, 200, 0.85);
 	--font-sans: var(--font-inter), sans-serif;
 }
-
-/* Typographic-hierarchy prototype: solid value steps exposed as Tailwind utilities
-   (text-muted / text-subtle / text-faint) so hierarchy is enforced by weight, case,
-   tracking + a controlled value step — not by opacity collapsing text toward the
-   background. Promote these tokens to base.css + sync-sites.mjs (per-tool hue) once
-   the approach is approved across the suite. */
-@theme inline {
-	--color-muted: var(--foreground-muted);
-	--color-subtle: var(--foreground-subtle);
-	--color-faint: var(--foreground-faint);
-}
