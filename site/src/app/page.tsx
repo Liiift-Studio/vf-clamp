@@ -111,6 +111,7 @@ export default function Home() {
 						<p className="text-xs opacity-50 leading-relaxed">
 							Native Glyphs plugin. Select named instances from your open font, choose a format, and export restricted VFs — all without leaving the app.
 						</p>
+						<img src="/screenshots/glyphs.png" alt="vf-clamp Glyphs plugin: design-space chart + animated specimen" className="rounded-lg w-full h-auto border border-white/10" />
 						<code className="text-xs font-mono opacity-40">vf-clamp-glyphs.glyphsPlugin</code>
 						<div className="flex items-center gap-2 mt-auto pt-3">
 							<a href="https://github.com/Liiift-Studio/vf-clamp-glyphs/releases/latest/download/vf-clamp-glyphs.zip" target="_blank" rel="noopener noreferrer" className="flex-1 text-center text-xs font-medium py-2 px-3 rounded-lg bg-white/10 hover:bg-white/15 transition-colors">Download ↗</a>
@@ -135,6 +136,7 @@ export default function Home() {
 						<p className="text-xs opacity-50 leading-relaxed">
 							RoboFont extension using fonttools directly. Pick instances from any open UFO-based variable font and export clamped outputs from the Extensions menu.
 						</p>
+						<img src="/screenshots/robofont.png" alt="vf-clamp RoboFont extension: design-space chart + animated specimen" className="rounded-lg w-full h-auto border border-white/10" />
 						<code className="text-xs font-mono opacity-40">vf-clamp.roboFontExt</code>
 						<div className="flex items-center gap-2 mt-auto pt-3">
 							<a href="https://github.com/Liiift-Studio/vf-clamp-robofont/releases/latest/download/vf-clamp-robofont.zip" target="_blank" rel="noopener noreferrer" className="flex-1 text-center text-xs font-medium py-2 px-3 rounded-lg bg-white/10 hover:bg-white/15 transition-colors">Download ↗</a>
@@ -153,7 +155,7 @@ export default function Home() {
 							<span className="text-sm font-medium">VS Code</span>
 						</div>
 						<p className="text-xs opacity-50 leading-relaxed">
-							Right-click any <code className="font-mono">.ttf</code> in the Explorer to open the vf-clamp panel. Select instances, preview the axis hull, and export — without leaving your editor.
+							Right-click any <code className="font-mono">.ttf</code> in the Explorer to open the vf-clamp panel. Select instances, preview the design space, and export — without leaving your editor.
 						</p>
 						<code className="text-xs font-mono opacity-40">vf-clamp.vscode-extension</code>
 						<div className="flex items-center gap-2 mt-auto pt-3">
@@ -179,7 +181,7 @@ export default function Home() {
 				<div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
 					{[
 						{ n: "01", t: "Purchase", d: "A customer buys two or more adjacent styles — Light through Bold, or a single width across its weights." },
-						{ n: "02", t: "Clamp", d: "Your store POSTs the order to the vf-clamp API. The design space is hulled to those instances; everything outside is pruned." },
+						{ n: "02", t: "Clamp", d: "Your store POSTs the order to the vf-clamp API. The design space is clamped to the range of those instances; everything outside is pruned." },
 						{ n: "03", t: "Deliver", d: "A scoped VF comes back in seconds, name table rewritten to the purchased range, in the format the licence calls for." },
 					].map((step) => (
 						<div key={step.n} className="flex flex-col gap-2 rounded-xl p-5" style={{ background: "rgba(0,0,0,0.2)" }}>
@@ -299,7 +301,7 @@ export default function Home() {
 				<div className="flex flex-col gap-8 text-sm">
 
 					<div className="flex flex-col gap-3">
-						<p className="opacity-50">From named instances — hull computed automatically</p>
+						<p className="opacity-50">From named instances — design-space range computed automatically</p>
 						<CodeBlock code={`import { clampFont } from '@liiift-studio/vf-clamp'
 import { readFile, writeFile } from 'fs/promises'
 
@@ -339,7 +341,7 @@ for (const result of results) {
 					</div>
 
 					<div className="flex flex-col gap-3">
-						<p className="opacity-50">Mix instances and axes — axes override the hull</p>
+						<p className="opacity-50">Mix instances and axes — explicit axes override the computed range</p>
 						<CodeBlock code={`const results = await clampFont(source, {
   format: 'woff2',
   outputs: [
