@@ -93,6 +93,26 @@ export default function Home() {
 						</div>
 					</div>
 
+					{/* VS Code */}
+					<div className="flex flex-col gap-3 rounded-xl p-6" style={{ background: "rgba(0,0,0,0.2)" }}>
+						<div className="flex items-center gap-3">
+							{/* VS Code: the distinctive four-panel / fragmented-square logo shape */}
+							<svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" className="opacity-60" aria-hidden="true">
+								<path d="M13 2.5L4.5 10.5l3 1.5L13 2.5z"/>
+								<path d="M4.5 15.5l8.5-3V2.5L4.5 10.5v5z"/>
+							</svg>
+							<span className="text-sm font-medium">VS Code</span>
+						</div>
+						<p className="text-xs opacity-50 leading-relaxed">
+							Right-click any <code className="font-mono">.ttf</code> in the Explorer to open the vf-clamp panel. Select instances, preview the design space, and export — without leaving your editor.
+						</p>
+						<code className="text-xs font-mono opacity-40">vf-clamp.vscode-extension</code>
+						<div className="flex items-center gap-2 mt-auto pt-3">
+							<a href="https://github.com/Liiift-Studio/vf-clamp-vscode/releases/latest/download/vf-clamp.vsix" target="_blank" rel="noopener noreferrer" className="flex-1 text-center text-xs font-medium py-2 px-3 rounded-lg bg-white/10 hover:bg-white/15 transition-colors">Download .vsix ↗</a>
+							<a href="https://github.com/Liiift-Studio/vf-clamp-vscode" target="_blank" rel="noopener noreferrer" className="flex-1 text-center text-xs py-2 px-3 rounded-lg border border-white/15 hover:border-white/30 hover:bg-white/5 transition-colors opacity-70 hover:opacity-100">GitHub ↗</a>
+						</div>
+					</div>
+
 					{/* Glyphs.app */}
 					<div className="flex flex-col gap-3 rounded-xl p-6" style={{ background: "rgba(0,0,0,0.2)" }}>
 						<div className="flex items-center gap-3">
@@ -111,7 +131,9 @@ export default function Home() {
 						<p className="text-xs opacity-50 leading-relaxed">
 							Native Glyphs plugin. Select named instances from your open font, choose a format, and export restricted VFs — all without leaving the app.
 						</p>
-						<img src="/screenshots/glyphs.png" alt="vf-clamp Glyphs plugin: design-space chart + animated specimen" className="rounded-lg w-full h-auto border border-white/10" />
+						<div className="rounded-lg border border-white/10 overflow-hidden bg-black/30 flex items-center justify-center h-80">
+							<img src="/screenshots/glyphs.png" alt="vf-clamp Glyphs plugin: design-space chart + animated specimen" className="max-h-full max-w-full object-contain" />
+						</div>
 						<code className="text-xs font-mono opacity-40">vf-clamp-glyphs.glyphsPlugin</code>
 						<div className="flex items-center gap-2 mt-auto pt-3">
 							<a href="https://github.com/Liiift-Studio/vf-clamp-glyphs/releases/latest/download/vf-clamp-glyphs.zip" target="_blank" rel="noopener noreferrer" className="flex-1 text-center text-xs font-medium py-2 px-3 rounded-lg bg-white/10 hover:bg-white/15 transition-colors">Download ↗</a>
@@ -136,31 +158,13 @@ export default function Home() {
 						<p className="text-xs opacity-50 leading-relaxed">
 							RoboFont extension using fonttools directly. Pick instances from any open UFO-based variable font and export clamped outputs from the Extensions menu.
 						</p>
-						<img src="/screenshots/robofont.png" alt="vf-clamp RoboFont extension: design-space chart + animated specimen" className="rounded-lg w-full h-auto border border-white/10" />
+						<div className="rounded-lg border border-white/10 overflow-hidden bg-black/30 flex items-center justify-center h-80">
+							<img src="/screenshots/robofont.png" alt="vf-clamp RoboFont extension: full dialog with design-space chart + animated specimen + LOG pane" className="max-h-full max-w-full object-contain" />
+						</div>
 						<code className="text-xs font-mono opacity-40">vf-clamp.roboFontExt</code>
 						<div className="flex items-center gap-2 mt-auto pt-3">
 							<a href="https://github.com/Liiift-Studio/vf-clamp-robofont/releases/latest/download/vf-clamp-robofont.zip" target="_blank" rel="noopener noreferrer" className="flex-1 text-center text-xs font-medium py-2 px-3 rounded-lg bg-white/10 hover:bg-white/15 transition-colors">Download ↗</a>
 							<a href="https://github.com/Liiift-Studio/vf-clamp-robofont" target="_blank" rel="noopener noreferrer" className="flex-1 text-center text-xs py-2 px-3 rounded-lg border border-white/15 hover:border-white/30 hover:bg-white/5 transition-colors opacity-70 hover:opacity-100">GitHub ↗</a>
-						</div>
-					</div>
-
-					{/* VS Code */}
-					<div className="flex flex-col gap-3 rounded-xl p-6" style={{ background: "rgba(0,0,0,0.2)" }}>
-						<div className="flex items-center gap-3">
-							{/* VS Code: the distinctive four-panel / fragmented-square logo shape */}
-							<svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" className="opacity-60" aria-hidden="true">
-								<path d="M13 2.5L4.5 10.5l3 1.5L13 2.5z"/>
-								<path d="M4.5 15.5l8.5-3V2.5L4.5 10.5v5z"/>
-							</svg>
-							<span className="text-sm font-medium">VS Code</span>
-						</div>
-						<p className="text-xs opacity-50 leading-relaxed">
-							Right-click any <code className="font-mono">.ttf</code> in the Explorer to open the vf-clamp panel. Select instances, preview the design space, and export — without leaving your editor.
-						</p>
-						<code className="text-xs font-mono opacity-40">vf-clamp.vscode-extension</code>
-						<div className="flex items-center gap-2 mt-auto pt-3">
-							<a href="https://github.com/Liiift-Studio/vf-clamp-vscode/releases/latest/download/vf-clamp.vsix" target="_blank" rel="noopener noreferrer" className="flex-1 text-center text-xs font-medium py-2 px-3 rounded-lg bg-white/10 hover:bg-white/15 transition-colors">Download .vsix ↗</a>
-							<a href="https://github.com/Liiift-Studio/vf-clamp-vscode" target="_blank" rel="noopener noreferrer" className="flex-1 text-center text-xs py-2 px-3 rounded-lg border border-white/15 hover:border-white/30 hover:bg-white/5 transition-colors opacity-70 hover:opacity-100">GitHub ↗</a>
 						</div>
 					</div>
 
