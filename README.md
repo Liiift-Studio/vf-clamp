@@ -138,6 +138,24 @@ await writeFile('Omnes-Condensed-Text-VF.woff2', results[0].buffer)
 
 ---
 
+## Verifying output
+
+Clamping is inspectable — read the result back with `getInstances` and the fvar table reflects the restricted range. Clamping Inter (wght 100–900, 9 instances) to a Text weight range:
+
+```ts
+const [text] = await clampFont(source, {
+  outputs: [{ name: 'Text', axes: { wght: { min: 400, max: 700 } } }],
+})
+
+const { axes, instances } = await getInstances(text.buffer)
+// axes:      wght 400 → 700          (was 100 → 900)
+// instances: Regular, Medium, SemiBold, Bold   (the 5 outside the range are gone)
+```
+
+The output is a valid variable font you can drop into a build or hand to a customer: masters outside the range are physically removed, so nothing past the licence is reachable in the file.
+
+---
+
 ## API
 
 ### `getInstances(input)`
@@ -307,6 +325,28 @@ X-API-Key: <your-key>
 { "fontUrl": "https://cdn.example.com/MyFont-VF.ttf" }
 // → { axes: [...], instances: [...] }
 ```
+
+**Performance & limits.** The hosted endpoints keep the runtime warm, so a typical clamp returns in ~1–2 s (a cold instance adds the one-time ~10–20 s Pyodide init). Rate limits, concurrency, and uptime depend on your API plan — ask when you request a key.
+
+---
+
+## Running at scale
+
+Pyodide is single-threaded and warms up once per process (~10–20 s cold, then ~1–2 s per call). In a storefront, **don't clamp inside the request handler** and don't drive one instance from parallel requests — serialise through a warm worker, and scale out with a pool of processes:
+
+```ts
+import PQueue from 'p-queue'
+import { clampFont } from '@liiift-studio/vf-clamp'
+
+// one warm engine, requests queued — the checkout response isn't blocked on the clamp
+const queue = new PQueue({ concurrency: 1 }) // the engine is single-threaded
+
+export function enqueueClamp(source, options) {
+  return queue.add(() => clampFont(source, options))
+}
+```
+
+For higher throughput, run **N worker processes** (each with its own warm Pyodide) behind a job queue or round-robin — concurrency scales with processes, not threads — or offload entirely to the [hosted REST API](#rest-api).
 
 ---
 
