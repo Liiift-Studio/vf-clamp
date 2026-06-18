@@ -10,6 +10,8 @@ npm install @liiift-studio/vf-clamp
 
 **[Interactive demo at vfclamp.com →](https://vfclamp.com)**
 
+![clamp() for design space: a variable font's full weight × optical-size range, with "Text" (wght 400–700) and "Display" (wght 700–900) clamped to sub-ranges and an axis pinned](https://raw.githubusercontent.com/Liiift-Studio/vf-clamp/main/assets/design-space.png?v=1)
+
 ---
 
 ## What it does
@@ -34,6 +36,14 @@ Why it matters:
 - **Ready for `opsz` demand** — browsers drive the optical-size axis automatically via `font-optical-sizing: auto`, keyed off the rendered point size. Delivering `opsz` clamped to a usable range keeps files small as that axis matters more.
 
 The npm package, CLI, and editor plugins all share the same axis-constraint model, so the same delivery logic runs in your build pipeline, your storefront, or a designer's font editor.
+
+**Real numbers** — Inter (wght 100–900) clamped to a Text weight range (400–700), same WOFF2 format so the delta is pure clamping:
+
+| Font | Source TTF | Full WOFF2 | Text-clamped WOFF2 |
+|---|---|---|---|
+| Inter | 843 KB | 337 KB | **243 KB** — −28% vs full WOFF2 |
+
+Pinning an axis outright (e.g. a fixed width or optical size) removes its masters entirely and saves more.
 
 ---
 
@@ -268,6 +278,7 @@ type SubfamilyConfig = OutputConfig
 - **Outputs are processed sequentially** — Pyodide is single-threaded.
 - **Name table patching**: each output font's family name, full name, and PostScript name are updated to reflect the output's name.
 - **Next.js**: add `@liiift-studio/vf-clamp` to `serverExternalPackages` in `next.config.ts` to prevent webpack bundling the Pyodide runtime.
+- **Vite / other bundlers**: externalise `@liiift-studio/vf-clamp` and run it server-side or at build time, so the multi-MB Pyodide runtime isn't shipped to the browser.
 
 ---
 
@@ -309,6 +320,10 @@ vf-clamp is available as a CLI and as native plugins for Glyphs.app, RoboFont, a
 | [vf-clamp-glyphs](https://github.com/Liiift-Studio/vf-clamp-glyphs) | `.glyphsPlugin` download |
 | [vf-clamp-robofont](https://github.com/Liiift-Studio/vf-clamp-robofont) | `.roboFontExt` download |
 | [vf-clamp-vscode](https://github.com/Liiift-Studio/vf-clamp-vscode) | `.vsix` download / VS Code Marketplace |
+
+The CLI in action — inspect a font, then clamp it:
+
+![vf-clamp CLI: inspecting Inter's axes and 9 named instances, then clamping Regular–Bold to a Text WOFF2](https://raw.githubusercontent.com/Liiift-Studio/vf-clamp-cli/main/assets/demo.gif?v=1)
 
 ---
 
