@@ -10,7 +10,7 @@ npm install @liiift-studio/vf-clamp
 
 **[Interactive demo at vfclamp.com →](https://vfclamp.com)**
 
-![clamp() for design space: a variable font's full weight × optical-size range, with "Text" (wght 400–700) and "Display" (wght 700–900) clamped to sub-ranges and an axis pinned](https://raw.githubusercontent.com/Liiift-Studio/vf-clamp/main/assets/design-space.png?v=1)
+![Clamp to the styles a customer bought: a weight axis showing a full family's nine named instances (Thin–Black), and a clamped output that keeps only Light–Bold (wght 300–700) as a variable range while the masters outside the purchase are removed](https://raw.githubusercontent.com/Liiift-Studio/vf-clamp/main/assets/design-space.png?v=2)
 
 ---
 
