@@ -3,8 +3,8 @@
 @import "./base.css";
 
 :root {
-	--background: oklch(0.835 0.0776 26);
-	--btn-bg: oklch(0.715 0.1000 26);
+	--background: oklch(0.920 0.0349 26);
+	--btn-bg: oklch(0.780 0.0900 26);
 	--foreground: oklch(0.260 0.0550 26);          /* primary — headings, lead, card titles */
 	--foreground-muted: oklch(0.420 0.0300 26);   /* secondary — body copy + labels (was opacity-50/60/70) */
 	--foreground-subtle: oklch(0.520 0.0260 26);  /* tertiary — code samples, hero italic line */
