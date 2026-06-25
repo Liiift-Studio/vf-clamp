@@ -11,8 +11,8 @@ export default async function Image() {
 	const interLight = await readFile(join(process.cwd(), 'public/fonts/inter-300.woff'))
 	return new ImageResponse(
 		(
-			<div style={{ background: '#010515', width: '100%', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', padding: '72px 80px', fontFamily: 'Inter, sans-serif' }}>
-				<span style={{ fontSize: 13, letterSpacing: '0.18em', color: '#afb8c8', textTransform: 'uppercase' }}>vf-clamp</span>
+			<div style={{ background: '#fbdcd9', width: '100%', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', padding: '72px 80px', fontFamily: 'Inter, sans-serif' }}>
+				<span style={{ fontSize: 13, letterSpacing: '0.18em', color: '#5d4745', textTransform: 'uppercase' }}>vf-clamp</span>
 				<div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
 					{/* Axis range bars — visual metaphor for restricting design space */}
 					<div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 48 }}>
@@ -26,25 +26,25 @@ export default async function Image() {
 							const hiFrac = (hi - min) / (full - min)
 							return (
 								<div key={label} style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-									<span style={{ fontSize: 11, color: '#8c929f', fontFamily: 'monospace', width: 32 }}>{label}</span>
-									<div style={{ position: 'relative', width: w, height: 4, background: '#2b2e34', borderRadius: 2, display: 'flex' }}>
+									<span style={{ fontSize: 11, color: '#776361', fontFamily: 'monospace', width: 32 }}>{label}</span>
+									<div style={{ position: 'relative', width: w, height: 4, background: '#93817f', borderRadius: 2, display: 'flex' }}>
 										<div style={{ position: 'absolute', left: `${loFrac * 100}%`, width: `${(hiFrac - loFrac) * 100}%`, height: '100%', background: 'rgba(80,190,200,0.75)', borderRadius: 2 }} />
 									</div>
 								</div>
 							)
 						})}
 					</div>
-					<div style={{ fontSize: 76, color: '#f2f5fb', lineHeight: 1.06, fontWeight: 300 }}>Restrict the range,</div>
-					<div style={{ fontSize: 76, color: '#afb8c8', lineHeight: 1.06, fontWeight: 300, fontStyle: 'italic' }}>keep what varies.</div>
+					<div style={{ fontSize: 76, color: '#3b1816', lineHeight: 1.06, fontWeight: 300 }}>Restrict the range,</div>
+					<div style={{ fontSize: 76, color: '#5d4745', lineHeight: 1.06, fontWeight: 300, fontStyle: 'italic' }}>keep what varies.</div>
 				</div>
 				<div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
-					<div style={{ fontSize: 14, color: '#afb8c8', letterSpacing: '0.04em', display: 'flex', gap: 20 }}>
+					<div style={{ fontSize: 14, color: '#5d4745', letterSpacing: '0.04em', display: 'flex', gap: 20 }}>
 						<span>TypeScript</span><span style={{ opacity: 0.4 }}>·</span>
 						<span>fonttools varLib.instancer</span><span style={{ opacity: 0.4 }}>·</span>
 						<span>Pyodide WASM</span><span style={{ opacity: 0.4 }}>·</span>
 						<span>TTF · OTF · WOFF · WOFF2</span>
 					</div>
-					<div style={{ fontSize: 13, color: '#8c929f', letterSpacing: '0.04em' }}>vfclamp.com</div>
+					<div style={{ fontSize: 13, color: '#776361', letterSpacing: '0.04em' }}>vfclamp.com</div>
 				</div>
 			</div>
 		),
