@@ -422,9 +422,9 @@ function AxisRangeBar({
 		<div className="flex items-center gap-3 text-xs">
 			<span className="font-mono opacity-40 w-10 shrink-0">{axis.tag}</span>
 			{/* Bar is purely decorative — numeric range in the adjacent span conveys the same info */}
-			<div className="flex-1 h-1.5 bg-white/10 rounded-full relative" aria-hidden="true">
+			<div className="flex-1 h-1.5 bg-foreground/10 rounded-full relative" aria-hidden="true">
 				<div
-					className="absolute h-full bg-white/60 rounded-full"
+					className="absolute h-full bg-foreground/60 rounded-full"
 					style={{ left: `${leftPct}%`, width: `${Math.max(widthPct, 0.5)}%` }}
 				/>
 			</div>
@@ -506,7 +506,7 @@ function TextPreview({
 				onClick={() => setEditing((v) => !v)}
 				aria-label={editing ? 'Finish editing preview text' : 'Edit preview text'}
 				title={editing ? 'Confirm and stop editing preview text' : 'Edit the preview text rendered in this font'}
-				className="shrink-0 mt-2 p-1.5 rounded opacity-25 group-hover/preview:opacity-60 hover:!opacity-100 hover:bg-white/10 transition-all"
+				className="shrink-0 mt-2 p-1.5 rounded opacity-25 group-hover/preview:opacity-60 hover:!opacity-100 hover:bg-foreground/10 transition-all"
 			>
 				{editing ? (
 					<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -859,7 +859,7 @@ export default function Demo() {
 				onDragLeave={() => setDragActive(false)}
 				className={[
 					'flex flex-col sm:flex-row items-start sm:items-center gap-4 rounded-xl border border-dashed py-5 px-5 transition-colors',
-					dragActive ? 'border-white/50 bg-white/5' : 'border-white/15 hover:border-white/25',
+					dragActive ? 'border-foreground/50 bg-foreground/5' : 'border-foreground/15 hover:border-foreground/25',
 				].join(' ')}
 				aria-label="Drop zone — drag a variable font file here to load it"
 			>
@@ -900,7 +900,7 @@ export default function Demo() {
 						</div>
 					)}
 				</div>
-				<label className="text-xs px-3 py-1.5 rounded-full border border-white/20 cursor-pointer hover:bg-white/5 transition-colors shrink-0">
+				<label className="text-xs px-3 py-1.5 rounded-full border border-foreground/20 cursor-pointer hover:bg-foreground/5 transition-colors shrink-0">
 					{loadState === 'ready' ? 'Swap font' : 'Browse font'}
 					<input
 						type="file"
@@ -959,8 +959,8 @@ export default function Demo() {
 														isIsolated
 															? 'border-amber-400/60 bg-amber-400/5'
 															: isSelected
-															? 'border-white/40 bg-white/5'
-															: 'border-white/10 opacity-50 hover:opacity-80 hover:border-white/25',
+															? 'border-foreground/40 bg-foreground/5'
+															: 'border-foreground/10 opacity-50 hover:opacity-80 hover:border-foreground/25',
 													].join(' ')}
 												>
 													<span className="text-xs font-mono">{inst.name}</span>
@@ -1016,7 +1016,7 @@ export default function Demo() {
 						<span>Advanced</span>
 					</button>
 					{showAdvanced && (
-						<div className="flex flex-col gap-4 pl-4 border-l border-white/10">
+						<div className="flex flex-col gap-4 pl-4 border-l border-foreground/10">
 							<p className="text-xs opacity-35 leading-relaxed max-w-sm">
 								{freeAxes.length === 1
 									? `The ${freeAxes[0].name} axis isn't set by named instances — add a range to include it in all output files.`
@@ -1042,7 +1042,7 @@ export default function Demo() {
 													setAxisOverrides((prev) => ({ ...prev, [axis.tag]: { min, max: curMax } }))
 												}}
 												title={`Minimum value for the ${axis.name} (${axis.tag}) axis in all output files (range: ${axis.minimum}–${axis.maximum})`}
-												className="w-20 bg-white/5 border border-white/10 rounded px-2 py-1 font-mono text-center focus:outline-none focus:border-white/30 transition-colors"
+												className="w-20 bg-foreground/5 border border-foreground/10 rounded px-2 py-1 font-mono text-center focus:outline-none focus:border-foreground/30 transition-colors"
 											/>
 											<span className="opacity-20" aria-hidden="true">–</span>
 											<input
@@ -1056,7 +1056,7 @@ export default function Demo() {
 													setAxisOverrides((prev) => ({ ...prev, [axis.tag]: { min: curMin, max } }))
 												}}
 												title={`Maximum value for the ${axis.name} (${axis.tag}) axis in all output files (range: ${axis.minimum}–${axis.maximum})`}
-												className="w-20 bg-white/5 border border-white/10 rounded px-2 py-1 font-mono text-center focus:outline-none focus:border-white/30 transition-colors"
+												className="w-20 bg-foreground/5 border border-foreground/10 rounded px-2 py-1 font-mono text-center focus:outline-none focus:border-foreground/30 transition-colors"
 											/>
 										</div>
 										<span className="opacity-20 font-mono tabular-nums">{axis.minimum}–{axis.maximum}</span>
@@ -1103,7 +1103,7 @@ export default function Demo() {
 								key={groupKey}
 								className={[
 									'rounded-xl border px-5 pt-5 pb-5 flex flex-col gap-5',
-									isIsolated ? 'border-amber-400/25' : 'border-white/10',
+									isIsolated ? 'border-amber-400/25' : 'border-foreground/10',
 								].join(' ')}
 							>
 								{/* Header */}
@@ -1170,7 +1170,7 @@ export default function Demo() {
 											<table className="w-full text-[10px] font-mono">
 												<tbody>
 													{nameTable.map(({ nameId, label: nameLabel, value }) => (
-														<tr key={nameId} className="border-t border-white/5">
+														<tr key={nameId} className="border-t border-foreground/5">
 															<td className="py-1 pr-4 opacity-30 shrink-0 whitespace-nowrap">{nameLabel}</td>
 															<td className="py-1 opacity-60 break-all">{value}</td>
 														</tr>
@@ -1202,7 +1202,7 @@ export default function Demo() {
 								aria-describedby={processing ? 'download-progress' : undefined}
 								title={processing ? 'Processing — please wait' : `Send the selected instances to the server and download ${groups.length === 1 ? '1 axis-restricted font file' : `${groups.length} axis-restricted font files`}`}
 								className={[
-									'text-sm px-5 py-2.5 rounded-full border border-white/20 hover:bg-white/5 transition-colors',
+									'text-sm px-5 py-2.5 rounded-full border border-foreground/20 hover:bg-foreground/5 transition-colors',
 									processing ? 'opacity-30 cursor-not-allowed' : '',
 								].join(' ')}
 							>
@@ -1215,7 +1215,7 @@ export default function Demo() {
 								<div
 									role="group"
 									aria-label="Output format"
-									className="flex items-center rounded-full border border-white/15 overflow-hidden text-xs"
+									className="flex items-center rounded-full border border-foreground/15 overflow-hidden text-xs"
 								>
 									{(['ttf', 'otf', 'woff', 'woff2'] as OutputFormat[]).map((fmt) => (
 										<button
@@ -1231,7 +1231,7 @@ export default function Demo() {
 											className={[
 												'px-3 py-1.5 font-mono transition-colors',
 												outputFormat === fmt
-													? 'bg-white/10 opacity-100'
+													? 'bg-foreground/10 opacity-100'
 													: 'opacity-30 hover:opacity-60',
 											].join(' ')}
 										>
@@ -1276,10 +1276,10 @@ export default function Demo() {
 									aria-valuemin={0}
 									aria-valuemax={100}
 									aria-label={STAGE_LABELS[processingStage]}
-									className="h-0.5 bg-white/10 rounded-full overflow-hidden w-full max-w-xs"
+									className="h-0.5 bg-foreground/10 rounded-full overflow-hidden w-full max-w-xs"
 								>
 									<div
-										className="h-full bg-white/50 rounded-full transition-all duration-500 ease-out"
+										className="h-full bg-foreground/50 rounded-full transition-all duration-500 ease-out"
 										style={{ width: `${processingProgress}%` }}
 									/>
 								</div>
@@ -1298,12 +1298,12 @@ export default function Demo() {
 						<button
 							onClick={() => setShowCode((v) => !v)}
 							title={showCode ? 'Hide the npm code snippet' : 'Show the vf-clamp npm code snippet that reproduces this configuration'}
-							className="self-start text-xs px-3 py-1.5 rounded-full border border-white/15 hover:bg-white/5 transition-colors opacity-60 hover:opacity-100"
+							className="self-start text-xs px-3 py-1.5 rounded-full border border-foreground/15 hover:bg-foreground/5 transition-colors opacity-60 hover:opacity-100"
 						>
 							{showCode ? 'Hide code' : 'See code'}
 						</button>
 						{showCode && (
-							<pre className="bg-white/5 rounded-xl p-4 overflow-x-auto text-xs leading-relaxed font-mono opacity-75 whitespace-pre">
+							<pre className="bg-foreground/5 rounded-xl p-4 overflow-x-auto text-xs leading-relaxed font-mono opacity-75 whitespace-pre">
 								<code>{codeSnippet}</code>
 							</pre>
 						)}

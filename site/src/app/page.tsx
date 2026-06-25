@@ -88,8 +88,8 @@ export default function Home() {
 						</p>
 						<code className="text-xs font-mono text-subtle">vf-clamp clamp font.ttf --axis wght:400:700</code>
 						<div className="flex items-center gap-2 mt-auto pt-3">
-							<a href="https://github.com/Liiift-Studio/vf-clamp-cli" target="_blank" rel="noopener noreferrer" className="flex-1 text-center text-xs font-medium py-2 px-3 rounded-lg bg-white/10 hover:bg-white/15 transition-colors">GitHub ↗</a>
-							<a href="https://github.com/Liiift-Studio/vf-clamp-cli#readme" target="_blank" rel="noopener noreferrer" className="flex-1 text-center text-xs py-2 px-3 rounded-lg border border-white/15 hover:border-white/30 hover:bg-white/5 transition-colors text-muted hover:text-foreground">Docs ↗</a>
+							<a href="https://github.com/Liiift-Studio/vf-clamp-cli" target="_blank" rel="noopener noreferrer" className="flex-1 text-center text-xs font-medium py-2 px-3 rounded-lg bg-foreground/10 hover:bg-foreground/15 transition-colors">GitHub ↗</a>
+							<a href="https://github.com/Liiift-Studio/vf-clamp-cli#readme" target="_blank" rel="noopener noreferrer" className="flex-1 text-center text-xs py-2 px-3 rounded-lg border border-foreground/15 hover:border-foreground/30 hover:bg-foreground/5 transition-colors text-muted hover:text-foreground">Docs ↗</a>
 						</div>
 					</div>
 
@@ -108,8 +108,8 @@ export default function Home() {
 						</p>
 						<code className="text-xs font-mono text-subtle">vf-clamp.vscode-extension</code>
 						<div className="flex items-center gap-2 mt-auto pt-3">
-							<a href="https://github.com/Liiift-Studio/vf-clamp-vscode/releases/latest/download/vf-clamp.vsix" target="_blank" rel="noopener noreferrer" className="flex-1 text-center text-xs font-medium py-2 px-3 rounded-lg bg-white/10 hover:bg-white/15 transition-colors">Download .vsix ↗</a>
-							<a href="https://github.com/Liiift-Studio/vf-clamp-vscode" target="_blank" rel="noopener noreferrer" className="flex-1 text-center text-xs py-2 px-3 rounded-lg border border-white/15 hover:border-white/30 hover:bg-white/5 transition-colors text-muted hover:text-foreground">GitHub ↗</a>
+							<a href="https://github.com/Liiift-Studio/vf-clamp-vscode/releases/latest/download/vf-clamp.vsix" target="_blank" rel="noopener noreferrer" className="flex-1 text-center text-xs font-medium py-2 px-3 rounded-lg bg-foreground/10 hover:bg-foreground/15 transition-colors">Download .vsix ↗</a>
+							<a href="https://github.com/Liiift-Studio/vf-clamp-vscode" target="_blank" rel="noopener noreferrer" className="flex-1 text-center text-xs py-2 px-3 rounded-lg border border-foreground/15 hover:border-foreground/30 hover:bg-foreground/5 transition-colors text-muted hover:text-foreground">GitHub ↗</a>
 						</div>
 					</div>
 
@@ -140,22 +140,22 @@ export default function Home() {
 						<p className="text-xs text-muted leading-relaxed max-w-2xl">
 							Native plugins for Glyphs.app and RoboFont. Select named instances from your open font (or a TTF/OTF on disk), preview the licensed design space in a live chart with an animated specimen, and export restricted VFs — without leaving your type editor. Both plugins share the same UI; pick the one for your tool.
 						</p>
-						<div className="rounded-lg border border-white/10 overflow-hidden bg-black/30 flex items-center justify-center">
+						<div className="rounded-lg border border-foreground/10 overflow-hidden bg-black/30 flex items-center justify-center">
 							<img src="/screenshots/glyphs-robofont.png" alt="vf-clamp dialog inside Glyphs.app — RoboFont uses the same UI" className="max-w-full h-auto" />
 						</div>
 						<div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-auto pt-3">
 							<div className="flex flex-col gap-2">
 								<code className="text-xs font-mono text-subtle">vf-clamp-glyphs.glyphsPlugin</code>
 								<div className="flex gap-2">
-									<a href="https://github.com/Liiift-Studio/vf-clamp-glyphs/releases/latest/download/vf-clamp-glyphs.zip" target="_blank" rel="noopener noreferrer" className="flex-1 text-center text-xs font-medium py-2 px-3 rounded-lg bg-white/10 hover:bg-white/15 transition-colors">Glyphs.app ↗</a>
-									<a href="https://github.com/Liiift-Studio/vf-clamp-glyphs" target="_blank" rel="noopener noreferrer" className="flex-1 text-center text-xs py-2 px-3 rounded-lg border border-white/15 hover:border-white/30 hover:bg-white/5 transition-colors text-muted hover:text-foreground">GitHub ↗</a>
+									<a href="https://github.com/Liiift-Studio/vf-clamp-glyphs/releases/latest/download/vf-clamp-glyphs.zip" target="_blank" rel="noopener noreferrer" className="flex-1 text-center text-xs font-medium py-2 px-3 rounded-lg bg-foreground/10 hover:bg-foreground/15 transition-colors">Glyphs.app ↗</a>
+									<a href="https://github.com/Liiift-Studio/vf-clamp-glyphs" target="_blank" rel="noopener noreferrer" className="flex-1 text-center text-xs py-2 px-3 rounded-lg border border-foreground/15 hover:border-foreground/30 hover:bg-foreground/5 transition-colors text-muted hover:text-foreground">GitHub ↗</a>
 								</div>
 							</div>
 							<div className="flex flex-col gap-2">
 								<code className="text-xs font-mono text-subtle">vf-clamp.roboFontExt</code>
 								<div className="flex gap-2">
-									<a href="https://github.com/Liiift-Studio/vf-clamp-robofont/releases/latest/download/vf-clamp-robofont.zip" target="_blank" rel="noopener noreferrer" className="flex-1 text-center text-xs font-medium py-2 px-3 rounded-lg bg-white/10 hover:bg-white/15 transition-colors">RoboFont ↗</a>
-									<a href="https://github.com/Liiift-Studio/vf-clamp-robofont" target="_blank" rel="noopener noreferrer" className="flex-1 text-center text-xs py-2 px-3 rounded-lg border border-white/15 hover:border-white/30 hover:bg-white/5 transition-colors text-muted hover:text-foreground">GitHub ↗</a>
+									<a href="https://github.com/Liiift-Studio/vf-clamp-robofont/releases/latest/download/vf-clamp-robofont.zip" target="_blank" rel="noopener noreferrer" className="flex-1 text-center text-xs font-medium py-2 px-3 rounded-lg bg-foreground/10 hover:bg-foreground/15 transition-colors">RoboFont ↗</a>
+									<a href="https://github.com/Liiift-Studio/vf-clamp-robofont" target="_blank" rel="noopener noreferrer" className="flex-1 text-center text-xs py-2 px-3 rounded-lg border border-foreground/15 hover:border-foreground/30 hover:bg-foreground/5 transition-colors text-muted hover:text-foreground">GitHub ↗</a>
 								</div>
 							</div>
 						</div>
@@ -389,10 +389,10 @@ npx @liiift-studio/vf-clamp-cli clamp font.ttf \\
 								</tr>
 							</thead>
 							<tbody className="text-muted">
-								<tr className="border-t border-white/10 hover:bg-white/5 transition-colors"><td className="py-2 pr-6 font-mono">number</td><td className="py-2">Pin axis at value — removed from output design space</td></tr>
-								<tr className="border-t border-white/10 hover:bg-white/5 transition-colors"><td className="py-2 pr-6 font-mono">&#123; min, max &#125;</td><td className="py-2">Restrict to range — axis stays variable within bounds</td></tr>
-								<tr className="border-t border-white/10 hover:bg-white/5 transition-colors"><td className="py-2 pr-6 font-mono">null</td><td className="py-2">Explicitly keep full original range — same as omitting the axis entirely</td></tr>
-								<tr className="border-t border-white/10 hover:bg-white/5 transition-colors"><td className="py-2 pr-6 font-mono italic text-subtle">omitted</td><td className="py-2">Keep full original range — axis is unchanged</td></tr>
+								<tr className="border-t border-foreground/10 hover:bg-foreground/5 transition-colors"><td className="py-2 pr-6 font-mono">number</td><td className="py-2">Pin axis at value — removed from output design space</td></tr>
+								<tr className="border-t border-foreground/10 hover:bg-foreground/5 transition-colors"><td className="py-2 pr-6 font-mono">&#123; min, max &#125;</td><td className="py-2">Restrict to range — axis stays variable within bounds</td></tr>
+								<tr className="border-t border-foreground/10 hover:bg-foreground/5 transition-colors"><td className="py-2 pr-6 font-mono">null</td><td className="py-2">Explicitly keep full original range — same as omitting the axis entirely</td></tr>
+								<tr className="border-t border-foreground/10 hover:bg-foreground/5 transition-colors"><td className="py-2 pr-6 font-mono italic text-subtle">omitted</td><td className="py-2">Keep full original range — axis is unchanged</td></tr>
 							</tbody>
 						</table>
 					</div>

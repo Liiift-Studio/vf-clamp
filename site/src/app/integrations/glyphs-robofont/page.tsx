@@ -95,7 +95,7 @@ export default function GlyphsRoboFontPage() {
 
 			{/* Screenshot — large, dominant */}
 			<section className="w-full max-w-2xl lg:max-w-5xl">
-				<div className="rounded-2xl border border-white/10 overflow-hidden bg-black/30">
+				<div className="rounded-2xl border border-foreground/10 overflow-hidden bg-black/30">
 					<img
 						src="/screenshots/glyphs-robofont.png"
 						alt="vf-clamp dialog inside Glyphs.app — RoboFont uses the same UI"
@@ -131,8 +131,8 @@ export default function GlyphsRoboFontPage() {
 							<p className="text-xs text-muted leading-relaxed">{p.install}</p>
 							<code className="text-xs font-mono text-subtle">{p.bundleName}</code>
 							<div className="flex items-center gap-2 mt-auto pt-3">
-								<a href={p.downloadUrl} target="_blank" rel="noopener noreferrer" className="flex-1 text-center text-xs font-medium py-2 px-3 rounded-lg bg-white/10 hover:bg-white/15 transition-colors">Download ↗</a>
-								<a href={p.repoUrl} target="_blank" rel="noopener noreferrer" className="flex-1 text-center text-xs py-2 px-3 rounded-lg border border-white/15 hover:border-white/30 hover:bg-white/5 transition-colors text-muted hover:text-foreground">GitHub ↗</a>
+								<a href={p.downloadUrl} target="_blank" rel="noopener noreferrer" className="flex-1 text-center text-xs font-medium py-2 px-3 rounded-lg bg-foreground/10 hover:bg-foreground/15 transition-colors">Download ↗</a>
+								<a href={p.repoUrl} target="_blank" rel="noopener noreferrer" className="flex-1 text-center text-xs py-2 px-3 rounded-lg border border-foreground/15 hover:border-foreground/30 hover:bg-foreground/5 transition-colors text-muted hover:text-foreground">GitHub ↗</a>
 							</div>
 						</div>
 					))}
