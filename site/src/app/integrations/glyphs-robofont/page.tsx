@@ -95,7 +95,7 @@ export default function GlyphsRoboFontPage() {
 
 			{/* Screenshot — large, dominant */}
 			<section className="w-full max-w-2xl lg:max-w-5xl">
-				<div className="rounded-2xl border border-foreground/10 overflow-hidden bg-black/30">
+				<div className="rounded-2xl border border-foreground/10 overflow-hidden bg-foreground/30">
 					<img
 						src="/screenshots/glyphs-robofont.png"
 						alt="vf-clamp dialog inside Glyphs.app — RoboFont uses the same UI"
@@ -112,7 +112,7 @@ export default function GlyphsRoboFontPage() {
 				<h2 className="text-xs uppercase tracking-[0.18em] font-medium text-muted">What you get</h2>
 				<div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
 					{FEATURES.map((f) => (
-						<div key={f.title} className="flex flex-col gap-2 rounded-xl p-6" style={{ background: "rgba(0,0,0,0.2)" }}>
+						<div key={f.title} className="flex flex-col gap-2 rounded-xl p-6" style={{ background: "color-mix(in oklch, var(--foreground) 20%, transparent)" }}>
 							<h3 className="text-sm font-semibold">{f.title}</h3>
 							<p className="text-xs text-muted leading-relaxed">{f.body}</p>
 						</div>
@@ -125,7 +125,7 @@ export default function GlyphsRoboFontPage() {
 				<h2 className="text-xs uppercase tracking-[0.18em] font-medium text-muted">Install</h2>
 				<div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
 					{PLUGINS.map((p) => (
-						<div key={p.name} className="flex flex-col gap-3 rounded-xl p-6" style={{ background: "rgba(0,0,0,0.2)" }}>
+						<div key={p.name} className="flex flex-col gap-3 rounded-xl p-6" style={{ background: "color-mix(in oklch, var(--foreground) 20%, transparent)" }}>
 							<h3 className="text-sm font-semibold">{p.name}</h3>
 							<p className="text-xs text-muted leading-relaxed">{p.requirement}</p>
 							<p className="text-xs text-muted leading-relaxed">{p.install}</p>
