@@ -140,7 +140,7 @@ export default function Home() {
 						<p className="text-xs text-muted leading-relaxed max-w-2xl">
 							Native plugins for Glyphs.app and RoboFont. Select named instances from your open font (or a TTF/OTF on disk), preview the licensed design space in a live chart with an animated specimen, and export restricted VFs — without leaving your type editor. Both plugins share the same UI; pick the one for your tool.
 						</p>
-						<div className="rounded-lg border border-foreground/10 overflow-hidden bg-foreground/30 flex items-center justify-center">
+						<div className="rounded-lg border border-foreground/10 overflow-hidden bg-[var(--panel)] flex items-center justify-center">
 							<img src="/screenshots/glyphs-robofont.png" alt="vf-clamp dialog inside Glyphs.app — RoboFont uses the same UI" className="max-w-full h-auto" />
 						</div>
 						<div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-auto pt-3">

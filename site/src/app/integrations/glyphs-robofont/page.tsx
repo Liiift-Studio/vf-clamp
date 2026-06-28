@@ -95,7 +95,7 @@ export default function GlyphsRoboFontPage() {
 
 			{/* Screenshot — large, dominant */}
 			<section className="w-full max-w-2xl lg:max-w-5xl">
-				<div className="rounded-2xl border border-foreground/10 overflow-hidden bg-foreground/30">
+				<div className="rounded-2xl border border-foreground/10 overflow-hidden bg-[var(--panel)]">
 					<img
 						src="/screenshots/glyphs-robofont.png"
 						alt="vf-clamp dialog inside Glyphs.app — RoboFont uses the same UI"
