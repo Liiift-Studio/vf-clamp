@@ -112,7 +112,7 @@ export default function GlyphsRoboFontPage() {
 				<h2 className="text-xs uppercase tracking-[0.18em] font-medium text-muted">What you get</h2>
 				<div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
 					{FEATURES.map((f) => (
-						<div key={f.title} className="flex flex-col gap-2 rounded-xl p-6" style={{ background: "color-mix(in oklch, var(--foreground) 20%, transparent)" }}>
+						<div key={f.title} className="flex flex-col gap-2 rounded-xl p-6" style={{ background: "var(--panel)" }}>
 							<h3 className="text-sm font-semibold">{f.title}</h3>
 							<p className="text-xs text-muted leading-relaxed">{f.body}</p>
 						</div>
@@ -125,7 +125,7 @@ export default function GlyphsRoboFontPage() {
 				<h2 className="text-xs uppercase tracking-[0.18em] font-medium text-muted">Install</h2>
 				<div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
 					{PLUGINS.map((p) => (
-						<div key={p.name} className="flex flex-col gap-3 rounded-xl p-6" style={{ background: "color-mix(in oklch, var(--foreground) 20%, transparent)" }}>
+						<div key={p.name} className="flex flex-col gap-3 rounded-xl p-6" style={{ background: "var(--panel)" }}>
 							<h3 className="text-sm font-semibold">{p.name}</h3>
 							<p className="text-xs text-muted leading-relaxed">{p.requirement}</p>
 							<p className="text-xs text-muted leading-relaxed">{p.install}</p>

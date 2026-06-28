@@ -60,7 +60,7 @@ export default function Home() {
 					flagged in yellow. Preview the restricted design space live, watch the file size drop,
 					then download the clamped fonts.
 				</p>
-				<div className="rounded-xl -mx-8 px-8 py-8" style={{ background: "color-mix(in oklch, var(--foreground) 20%, transparent)" }}>
+				<div className="rounded-xl -mx-8 px-8 py-8" style={{ background: "var(--panel)" }}>
 					<Demo />
 				</div>
 			</section>
@@ -75,7 +75,7 @@ export default function Home() {
 				<div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
 
 					{/* CLI */}
-					<div className="flex flex-col gap-3 rounded-xl p-6" style={{ background: "color-mix(in oklch, var(--foreground) 20%, transparent)" }}>
+					<div className="flex flex-col gap-3 rounded-xl p-6" style={{ background: "var(--panel)" }}>
 						<div className="flex items-center gap-3">
 							<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="opacity-60" aria-hidden="true">
 								<polyline points="4 17 10 11 4 5" />
@@ -94,7 +94,7 @@ export default function Home() {
 					</div>
 
 					{/* VS Code */}
-					<div className="flex flex-col gap-3 rounded-xl p-6" style={{ background: "color-mix(in oklch, var(--foreground) 20%, transparent)" }}>
+					<div className="flex flex-col gap-3 rounded-xl p-6" style={{ background: "var(--panel)" }}>
 						<div className="flex items-center gap-3">
 							{/* VS Code: the distinctive four-panel / fragmented-square logo shape */}
 							<svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" className="opacity-60" aria-hidden="true">
@@ -114,7 +114,7 @@ export default function Home() {
 					</div>
 
 					{/* Glyphs.app + RoboFont — combined card, shared screenshot */}
-					<div className="flex flex-col gap-3 rounded-xl p-6 sm:col-span-2" style={{ background: "color-mix(in oklch, var(--foreground) 20%, transparent)" }}>
+					<div className="flex flex-col gap-3 rounded-xl p-6 sm:col-span-2" style={{ background: "var(--panel)" }}>
 						<div className="flex items-center gap-3">
 							{/* Glyphs.app: bezier path with anchor + handle nodes */}
 							<svg width="18" height="18" viewBox="0 0 18 18" fill="none" className="opacity-60" aria-hidden="true">
@@ -181,7 +181,7 @@ export default function Home() {
 						{ n: "02", t: "Clamp", d: "Your store POSTs the order to the vf-clamp API. The design space is clamped to the range of those instances; everything outside is pruned." },
 						{ n: "03", t: "Deliver", d: "A scoped VF comes back in seconds, name table rewritten to the purchased range, in the format the licence calls for." },
 					].map((step) => (
-						<div key={step.n} className="flex flex-col gap-2 rounded-xl p-5" style={{ background: "color-mix(in oklch, var(--foreground) 20%, transparent)" }}>
+						<div key={step.n} className="flex flex-col gap-2 rounded-xl p-5" style={{ background: "var(--panel)" }}>
 							<span className="text-xs font-mono text-faint">{step.n}</span>
 							<span className="text-sm font-semibold">{step.t}</span>
 							<span className="text-xs text-muted leading-relaxed">{step.d}</span>
@@ -192,7 +192,7 @@ export default function Home() {
 				{/* Value props */}
 				<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
 
-					<div className="flex flex-col gap-2 rounded-xl p-6" style={{ background: "color-mix(in oklch, var(--foreground) 20%, transparent)" }}>
+					<div className="flex flex-col gap-2 rounded-xl p-6" style={{ background: "var(--panel)" }}>
 						<span className="text-sm font-semibold">A new revenue tier</span>
 						<p className="text-xs text-muted leading-relaxed">
 							Two adjacent styles become a variable purchase, not just two statics. Price a
@@ -201,7 +201,7 @@ export default function Home() {
 						</p>
 					</div>
 
-					<div className="flex flex-col gap-2 rounded-xl p-6" style={{ background: "color-mix(in oklch, var(--foreground) 20%, transparent)" }}>
+					<div className="flex flex-col gap-2 rounded-xl p-6" style={{ background: "var(--panel)" }}>
 						<span className="text-sm font-semibold">Licence containment</span>
 						<p className="text-xs text-muted leading-relaxed">
 							A full VF ships every master — customers can reach weights they never paid for.
@@ -210,7 +210,7 @@ export default function Home() {
 						</p>
 					</div>
 
-					<div className="flex flex-col gap-2 rounded-xl p-6" style={{ background: "color-mix(in oklch, var(--foreground) 20%, transparent)" }}>
+					<div className="flex flex-col gap-2 rounded-xl p-6" style={{ background: "var(--panel)" }}>
 						<span className="text-sm font-semibold">Branded, traceable files</span>
 						<p className="text-xs text-muted leading-relaxed">
 							The name table — family, full name, PostScript name — is rewritten to the
@@ -219,7 +219,7 @@ export default function Home() {
 						</p>
 					</div>
 
-					<div className="flex flex-col gap-2 rounded-xl p-6" style={{ background: "color-mix(in oklch, var(--foreground) 20%, transparent)" }}>
+					<div className="flex flex-col gap-2 rounded-xl p-6" style={{ background: "var(--panel)" }}>
 						<span className="text-sm font-semibold">Lighter files for the web</span>
 						<p className="text-xs text-muted leading-relaxed">
 							A site that uses only Medium&ndash;Black shouldn&rsquo;t ship Thin&ndash;Light
@@ -228,7 +228,7 @@ export default function Home() {
 						</p>
 					</div>
 
-					<div className="flex flex-col gap-2 rounded-xl p-6" style={{ background: "color-mix(in oklch, var(--foreground) 20%, transparent)" }}>
+					<div className="flex flex-col gap-2 rounded-xl p-6" style={{ background: "var(--panel)" }}>
 						<span className="text-sm font-semibold">Sell bespoke cuts</span>
 						<p className="text-xs text-muted leading-relaxed">
 							Pin an axis to a coordinate that was never a named instance — a custom optical
@@ -237,7 +237,7 @@ export default function Home() {
 						</p>
 					</div>
 
-					<div className="flex flex-col gap-2 rounded-xl p-6" style={{ background: "color-mix(in oklch, var(--foreground) 20%, transparent)" }}>
+					<div className="flex flex-col gap-2 rounded-xl p-6" style={{ background: "var(--panel)" }}>
 						<span className="text-sm font-semibold">Ready for opsz demand</span>
 						<p className="text-xs text-muted leading-relaxed">
 							Browsers now drive the optical-size axis automatically with

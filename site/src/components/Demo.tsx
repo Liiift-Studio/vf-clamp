@@ -977,7 +977,7 @@ export default function Demo() {
 													role="tooltip"
 													aria-hidden={tooltip !== inst.name}
 													className={[
-														'absolute bottom-full left-0 mb-2 z-10 bg-[#0c1417] border border-amber-400/30 rounded-lg px-3 py-2 text-xs text-amber-300/80 whitespace-nowrap shadow-xl pointer-events-none transition-opacity',
+														'absolute bottom-full left-0 mb-2 z-10 bg-[var(--panel)] border border-amber-400/30 rounded-lg px-3 py-2 text-xs text-amber-300/80 whitespace-nowrap shadow-xl pointer-events-none transition-opacity',
 														tooltip === inst.name ? 'opacity-100' : 'opacity-0',
 														isIsolated ? '' : 'hidden',
 													].join(' ')}
