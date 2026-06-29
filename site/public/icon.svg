@@ -1,18 +1,18 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-  <rect width="64" height="64" rx="14" fill="#0c1422"/>
+  <rect width="64" height="64" rx="14" fill="#eca199"/>
   <!-- Axis 1: full track + clamped active range + handles -->
-  <line x1="8" y1="17" x2="56" y2="17" stroke="#f2f5fb" stroke-width="2" opacity="0.2" stroke-linecap="round"/>
-  <line x1="18" y1="17" x2="46" y2="17" stroke="#f2f5fb" stroke-width="3.5" stroke-linecap="round"/>
-  <rect x="14" y="12" width="8" height="10" rx="2" fill="#f2f5fb"/>
-  <rect x="42" y="12" width="8" height="10" rx="2" fill="#f2f5fb"/>
+  <line x1="8" y1="17" x2="56" y2="17" stroke="#3b1816" stroke-width="2" opacity="0.2" stroke-linecap="round"/>
+  <line x1="18" y1="17" x2="46" y2="17" stroke="#3b1816" stroke-width="3.5" stroke-linecap="round"/>
+  <rect x="14" y="12" width="8" height="10" rx="2" fill="#3b1816"/>
+  <rect x="42" y="12" width="8" height="10" rx="2" fill="#3b1816"/>
   <!-- Axis 2 -->
-  <line x1="8" y1="33" x2="56" y2="33" stroke="#f2f5fb" stroke-width="2" opacity="0.2" stroke-linecap="round"/>
-  <line x1="8" y1="33" x2="38" y2="33" stroke="#f2f5fb" stroke-width="3.5" stroke-linecap="round" opacity="0.75"/>
-  <rect x="4" y="28" width="8" height="10" rx="2" fill="#f2f5fb" opacity="0.75"/>
-  <rect x="34" y="28" width="8" height="10" rx="2" fill="#f2f5fb" opacity="0.75"/>
+  <line x1="8" y1="33" x2="56" y2="33" stroke="#3b1816" stroke-width="2" opacity="0.2" stroke-linecap="round"/>
+  <line x1="8" y1="33" x2="38" y2="33" stroke="#3b1816" stroke-width="3.5" stroke-linecap="round" opacity="0.75"/>
+  <rect x="4" y="28" width="8" height="10" rx="2" fill="#3b1816" opacity="0.75"/>
+  <rect x="34" y="28" width="8" height="10" rx="2" fill="#3b1816" opacity="0.75"/>
   <!-- Axis 3 -->
-  <line x1="8" y1="49" x2="56" y2="49" stroke="#f2f5fb" stroke-width="2" opacity="0.2" stroke-linecap="round"/>
-  <line x1="26" y1="49" x2="56" y2="49" stroke="#f2f5fb" stroke-width="3.5" stroke-linecap="round" opacity="0.5"/>
-  <rect x="22" y="44" width="8" height="10" rx="2" fill="#f2f5fb" opacity="0.5"/>
-  <rect x="52" y="44" width="8" height="10" rx="2" fill="#f2f5fb" opacity="0.5"/>
+  <line x1="8" y1="49" x2="56" y2="49" stroke="#3b1816" stroke-width="2" opacity="0.2" stroke-linecap="round"/>
+  <line x1="26" y1="49" x2="56" y2="49" stroke="#3b1816" stroke-width="3.5" stroke-linecap="round" opacity="0.5"/>
+  <rect x="22" y="44" width="8" height="10" rx="2" fill="#3b1816" opacity="0.5"/>
+  <rect x="52" y="44" width="8" height="10" rx="2" fill="#3b1816" opacity="0.5"/>
 </svg>
